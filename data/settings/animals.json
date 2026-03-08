@@ -1,0 +1,29 @@
+{
+  "mode": "Animal Sounds",
+  "sliders": [
+    {
+      "name": "Dog Bark",
+      "ranges": [
+        { "min": 250, "max": 1000 }
+      ]
+    },
+    {
+      "name": "Cat Meow",
+      "ranges": [
+        { "min": 500, "max": 1500 }
+      ]
+    },
+    {
+      "name": "Bird Chirp",
+      "ranges": [
+        { "min": 2000, "max": 8000 }
+      ]
+    },
+    {
+      "name": "Elephant",
+      "ranges": [
+        { "min": 14, "max": 35 }
+      ]
+    }
+  ]
+}

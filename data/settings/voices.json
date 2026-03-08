@@ -1,0 +1,17 @@
+{
+  "mode": "Human Voices",
+  "sliders": [
+    {
+      "name": "Male Voice",
+      "ranges": [
+        { "min": 85, "max": 180 }
+      ]
+    },
+    {
+      "name": "Female Voice",
+      "ranges": [
+        { "min": 165, "max": 255 }
+      ]
+    }
+  ]
+}

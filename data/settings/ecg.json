@@ -1,0 +1,29 @@
+{
+  "mode": "ECG Abnormalities",
+  "sliders": [
+    {
+      "name": "Normal Rhythm",
+      "ranges": [
+        { "min": 0.5, "max": 40 }
+      ]
+    },
+    {
+      "name": "Atrial Fibrillation",
+      "ranges": [
+        { "min": 4, "max": 9 }
+      ]
+    },
+    {
+      "name": "Ventricular Tachycardia",
+      "ranges": [
+        { "min": 3, "max": 6 }
+      ]
+    },
+    {
+      "name": "Premature Beat",
+      "ranges": [
+        { "min": 8, "max": 20 }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "mode": "Musical Instruments",
+  "sliders": [
+    {
+      "name": "Kick Drum",
+      "ranges": [
+        { "min": 40, "max": 100 }
+      ]
+    },
+    {
+      "name": "Bass Guitar",
+      "ranges": [
+        { "min": 100, "max": 400 }
+      ]
+    },
+    {
+      "name": "Flute",
+      "ranges": [
+        { "min": 1500, "max": 4000 }
+      ]
+    },
+    {
+      "name": "Cymbals",
+      "ranges": [
+        { "min": 8000, "max": 16000 }
+      ]
+    }
+  ]
+}
