@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+  <meta charset='UTF-8'>
+  <title>Signal Equalizer</title>
+  <link rel='stylesheet' href='css/theme.css'>
+  <link rel='stylesheet' href='css/style.css'>
+  <script src='https://cdn.jsdelivr.net/npm/chart.js'></script>
+</head>
+<body>
+  <!-- TOP TOOLBAR -->
+  <div id='toolbar'>
+    <select id='mode-selector'>
+      <option value='instruments'>Musical Instruments</option>
+      <option value='animals'>Animal Sounds</option>
+      <option value='voices'>Human Voices</option>
+      <option value='ecg'>ECG Abnormalities</option>
+      <option value='generic'>Generic</option>
+    </select>
+    <input type='file' id='load-signal' accept='.wav,.csv'>
+    <button id='save-config'>Save Config</button>
+    <input type='file' id='load-config' accept='.json'>
+    <select id='wavelet-selector'>
+      <option value='fourier'>Fourier (Standard)</option>
+      <option value='db4'>Daubechies db4</option>
+      <option value='sym5'>Symlets sym5</option>
+      <option value='morlet'>Morlet</option>
+    </select>
+  </div>
+
+  <!-- TWO WAVEFORM VIEWERS -->
+  <div id='viewers'>
+    <canvas id='input-viewer'  width='580' height='200'></canvas>
+    <canvas id='output-viewer' width='580' height='200'></canvas>
+  </div>
+
+  <!-- PLAYBACK CONTROLS -->
+  <div id='playback-controls'>
+    <button id='btn-play'>▶ Play</button>
+    <button id='btn-pause'>⏸ Pause</button>
+    <button id='btn-stop'>⏹ Stop</button>
+    <button id='btn-audio'>🔊 Play Audio</button>
+    <label>Speed: <input type='range' id='speed-control'
+                   min='25' max='200' value='100'></label>
+    <button id='btn-zoom-in'>🔍+</button>
+    <button id='btn-zoom-out'>🔍-</button>
+    <button id='btn-reset'>↺ Reset</button>
+  </div>
+
+  <!-- FREQUENCY SCALE TOGGLE -->
+  <div id='scale-controls'>
+    <label><input type='radio' name='scale' id='scale-linear'
+           value='linear' checked> Linear</label>
+    <label><input type='radio' name='scale' id='scale-audiogram'
+           value='audiogram'> Audiogram</label>
+  </div>
+
+  <!-- FFT FREQUENCY CHART -->
+  <canvas id='freq-plot' width='900' height='250'></canvas>
+
+  <!-- SPECTROGRAMS -->
+  <button id='toggle-spectrogram'>Show/Hide Spectrograms</button>
+  <div id='spectrogram-panel'>
+    <canvas id='input-spectrogram'  width='440' height='200'></canvas>
+    <canvas id='output-spectrogram' width='440' height='200'></canvas>
+  </div>
+
+  <!-- EQUALIZER SLIDERS (filled by JavaScript) -->
+  <div id='equalizer-panel'></div>
+
+  <script src='js/utils.js'></script>
+  <script src='js/state.js'></script>
+  <script src='js/api.js'></script>
+  <script src='js/cineViewer.js'></script>
+  <script src='js/equalizerPanel.js'></script>
+  <script src='js/freqPlot.js'></script>
+  <script src='js/spectrogram.js'></script>
+  <script src='js/playback.js'></script>
+  <script src='js/main.js'></script>
+</body>
+</html>

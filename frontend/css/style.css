@@ -1,0 +1,32 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text);
+       font-family: Arial, sans-serif; padding: 12px; }
+
+#toolbar { display: flex; gap: 10px; align-items: center;
+           background: var(--panel); padding: 10px;
+           border-radius: 6px; margin-bottom: 12px; }
+
+#viewers { display: grid; grid-template-columns: 1fr 1fr;
+           gap: 10px; margin-bottom: 10px; }
+
+#viewers canvas { background: #0d0d1a; border-radius: 4px; width: 100%; }
+
+#playback-controls { display: flex; gap: 8px; align-items: center;
+                     background: var(--panel); padding: 8px;
+                     border-radius: 6px; margin-bottom: 10px; }
+
+#equalizer-panel { display: flex; gap: 16px; justify-content: center;
+                   align-items: flex-end; background: var(--panel);
+                   padding: 16px; border-radius: 6px; min-height: 180px; }
+
+.slider-wrapper { display: flex; flex-direction: column;
+                  align-items: center; gap: 6px; }
+
+.slider-wrapper input[type=range] {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  height: 120px;
+  accent-color: var(--slider); }
+
+#spectrogram-panel { display: grid; grid-template-columns: 1fr 1fr;
+                     gap: 10px; margin: 10px 0; }
