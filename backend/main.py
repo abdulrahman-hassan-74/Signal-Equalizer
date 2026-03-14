@@ -11,6 +11,7 @@ from typing import List
 
 from signal_processor import compute_fft, compute_spectrogram
 from equalizer_engine import apply_gain
+from settings_manager import load_settings, save_settings
 
 # ── Create the app ────────────────────────────────────────────────
 app = FastAPI()
@@ -181,3 +182,32 @@ def wavelet_compare(sid: str, mode: str):
         "better":         "wavelet" if snr_wavelet > snr_fourier
                           else "fourier",
     }
+
+
+# ═════════════════════════════════════════════════════
+#  ROUTE 7 — Get settings for a mode
+# ═════════════════════════════════════════════════════
+@app.get("/settings/{mode_name}")
+def get_settings(mode_name: str):
+    return load_settings(mode_name)
+
+
+# ═════════════════════════════════════════════════════
+#  ROUTE 8 — Save settings for a mode
+# ═════════════════════════════════════════════════════
+class SaveSettingsRequest(BaseModel):
+    mode_name: str
+    config:    dict
+
+@app.post("/settings/save")
+def save_settings_route(body: SaveSettingsRequest):
+    success = save_settings(body.mode_name, body.config)
+    return {"success": success}
+
+
+# ═════════════════════════════════════════════════════
+#  ROUTE 9 — List all available modes
+# ═════════════════════════════════════════════════════
+@app.get("/modes/list")
+def list_modes():
+    return ["instruments", "animals", "voices", "ecg", "generic"]
