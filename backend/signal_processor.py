@@ -2,19 +2,38 @@ import numpy as np
 from scipy.signal import spectrogram as scipy_spectrogram
 import pywt
 
+
 def compute_fft(signal, sample_rate):
-    """
-    Compute the FFT of a signal.
-    Returns list of {frequency, magnitude} dicts (positive frequencies only).
-    """
-    n = len(signal)
+    n           = len(signal)
     fft_result  = np.fft.rfft(signal)
     frequencies = np.fft.rfftfreq(n, d=1.0 / sample_rate)
     magnitudes  = np.abs(fft_result) / n
-    return [
-        {"frequency": float(f), "magnitude": float(m)}
-        for f, m in zip(frequencies, magnitudes)
-    ]
+
+    # Limit to audible range 0–20kHz
+    max_freq = min(20000, sample_rate // 2)
+    mask     = frequencies <= max_freq
+    freqs    = frequencies[mask]
+    mags     = magnitudes[mask]
+
+    # Smart downsample: keep max 2000 points but preserve peaks
+    total = len(freqs)
+    if total <= 2000:
+        step = 1
+    else:
+        step = total // 2000
+
+    result = []
+    for i in range(0, total, step):
+        # For each step-window, keep the bin with the highest magnitude
+        # This ensures spikes are never skipped
+        end   = min(i + step, total)
+        peak  = int(np.argmax(mags[i:end])) + i
+        result.append({
+            "frequency": float(freqs[peak]),
+            "magnitude": float(mags[peak])
+        })
+
+    return result
 
 
 def compute_ifft(fft_complex, n_samples):
@@ -32,8 +51,11 @@ def compute_spectrogram(signal, sample_rate):
     Returns a 2D list [frequency_bins][time_bins] with values 0.0 to 1.0.
     """
     _, _, Sxx = scipy_spectrogram(signal, fs=sample_rate, nperseg=256)
-    Sxx = np.log1p(Sxx)                        # log scale for better visuals
-    Sxx = Sxx / (np.max(Sxx) + 1e-9)           # normalize to 0–1
+
+    Sxx = np.log10(Sxx + 1e-10)  # log10 instead of log1p
+    Sxx = Sxx - Sxx.min()  # shift so min = 0
+    Sxx = Sxx / (Sxx.max() + 1e-9)  # normalize to 0-1
+
     return Sxx.tolist()
 
 
