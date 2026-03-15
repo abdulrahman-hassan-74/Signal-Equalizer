@@ -23,7 +23,7 @@
   --r:       7px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; overflow: hidden; }
+html { height: 100%; }
 body {
   background: var(--bg);
   color: var(--text);
@@ -33,6 +33,8 @@ body {
   flex-direction: column;
   padding: 7px;
   gap: 5px;
+  min-height: 100%;
+  overflow-y: auto;
 }
 
 /* ── SCROLLBAR ───────────────────────────── */
@@ -136,12 +138,12 @@ input[type=range].speed-r {
 /* ── ANALYSIS ROW ────────────────────────── */
 #analysis-row {
   display:grid; grid-template-columns:1fr 265px 265px;
-  gap:5px; flex:1; min-height:0; overflow:hidden;
+  gap:5px; height:320px; flex-shrink:0;
 }
 .panel {
   background:var(--surface); border:1px solid var(--border);
   border-radius:var(--r); overflow:hidden;
-  display:flex; flex-direction:column;
+  display:flex; flex-direction:column; min-height:0;
 }
 .p-head {
   display:flex; align-items:center; justify-content:space-between;
@@ -152,9 +154,9 @@ input[type=range].speed-r {
 .p-body { flex:1; min-height:0; position:relative; }
 .p-body canvas { display:block; width:100%; height:100%; }
 #spec-col {
-  display:flex; flex-direction:column; gap:5px; min-height:0;
+  display:flex; flex-direction:column; gap:5px;
 }
-#spec-col .panel { flex:1; min-height:0; }
+#spec-col .panel { height:153px; flex-shrink:0; }
 
 /* ── EQ SECTION ──────────────────────────── */
 #eq-wrap {
