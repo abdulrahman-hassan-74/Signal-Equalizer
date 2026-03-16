@@ -1,0 +1,2895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Signal Equalizer Studio</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════
+   DESIGN SYSTEM — Dark Industrial Neon
+═══════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --bg0:       #050510;
+  --bg1:       #090920;
+  --bg2:       #0d0d28;
+  --bg3:       #121235;
+  --border:    rgba(100,100,200,0.18);
+  --border2:   rgba(120,120,220,0.28);
+
+  --blue:      #38b6ff;
+  --cyan:      #00e8ff;
+  --pink:      #ff3daa;
+  --purple:    #b44dff;
+  --green:     #2effd7;
+  --orange:    #ff8a00;
+  --yellow:    #ffe066;
+  --red:       #ff4466;
+
+  --text:      #d8dcff;
+  --muted:     #5a5a9a;
+  --dim:       #2a2a55;
+
+  --radius:    8px;
+  --radius-lg: 14px;
+
+  --glow-blue:   0 0 18px rgba(56,182,255,0.35);
+  --glow-pink:   0 0 18px rgba(255,61,170,0.35);
+  --glow-green:  0 0 18px rgba(46,255,215,0.35);
+  --glow-purple: 0 0 18px rgba(180,77,255,0.35);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { overflow-y: scroll; }
+
+body {
+  background: var(--bg0);
+  background-image:
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(56,182,255,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 90%, rgba(180,77,255,0.06) 0%, transparent 60%);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  min-height: 100vh;
+}
+
+/* ─── Scrollbar ─────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg1); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* ─── Typography ────────────────────────────── */
+.mono { font-family: 'Space Mono', monospace; }
+.lbl  { font-size: 10px; font-weight: 700; text-transform: uppercase;
+        letter-spacing: .8px; color: var(--muted); }
+
+/* ─── Buttons ───────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 13px;
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text); font-family: inherit; font-size: 12px;
+  cursor: pointer; white-space: nowrap;
+  transition: background .15s, box-shadow .15s, transform .1s;
+  user-select: none;
+}
+.btn:hover  { background: var(--bg3); box-shadow: 0 0 10px rgba(100,100,255,.2); }
+.btn:active { transform: scale(.97); }
+.btn:disabled { opacity: .35; cursor: not-allowed; transform: none !important; }
+
+.btn-blue   { border-color: var(--blue);   color: var(--blue);   background: rgba(56,182,255,.08); }
+.btn-blue:hover   { background: rgba(56,182,255,.18); box-shadow: var(--glow-blue); }
+.btn-green  { border-color: var(--green);  color: var(--green);  background: rgba(46,255,215,.08); }
+.btn-green:hover  { background: rgba(46,255,215,.18); box-shadow: var(--glow-green); }
+.btn-pink   { border-color: var(--pink);   color: var(--pink);   background: rgba(255,61,170,.08); }
+.btn-pink:hover   { background: rgba(255,61,170,.18); box-shadow: var(--glow-pink); }
+.btn-purple { border-color: var(--purple); color: var(--purple); background: rgba(180,77,255,.08); }
+.btn-purple:hover { background: rgba(180,77,255,.18); box-shadow: var(--glow-purple); }
+.btn-orange { border-color: var(--orange); color: var(--orange); background: rgba(255,138,0,.08); }
+.btn-orange:hover { background: rgba(255,138,0,.18); box-shadow: 0 0 18px rgba(255,138,0,.35); }
+
+/* ─── File Button ───────────────────────────── */
+.file-btn {
+  position: relative; display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 13px;
+  border: 1px solid var(--blue); border-radius: var(--radius);
+  background: rgba(56,182,255,.08); color: var(--blue);
+  font-family: inherit; font-size: 12px; cursor: pointer;
+  white-space: nowrap; transition: background .15s, box-shadow .15s;
+}
+.file-btn:hover { background: rgba(56,182,255,.18); box-shadow: var(--glow-blue); }
+.file-btn input  { position: absolute; opacity: 0; inset: 0; cursor: pointer; width: 100%; }
+
+select {
+  background: var(--bg2); color: var(--text);
+  border: 1px solid var(--border2); border-radius: var(--radius);
+  padding: 5px 10px; font-family: inherit; font-size: 12px; cursor: pointer;
+}
+select:focus { outline: none; border-color: var(--blue); }
+
+/* ─── Panel ─────────────────────────────────── */
+.panel {
+  background: var(--bg1); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.panel-title {
+  font-size: 9px; font-weight: 800; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--muted);
+}
+
+/* ─── Separator ─────────────────────────────── */
+.sep { width: 1px; height: 20px; background: var(--border2); flex-shrink: 0; }
+.spacer { flex: 1; }
+
+/* ════════════════════════════════════════════
+   TOOLBAR
+════════════════════════════════════════════ */
+#toolbar {
+  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+  background: var(--bg1); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 7px 14px;
+}
+#app-logo {
+  font-size: 15px; font-weight: 800; font-family: 'Space Mono', monospace;
+  color: var(--cyan); letter-spacing: 0; white-space: nowrap;
+  text-shadow: 0 0 20px rgba(0,232,255,.5);
+}
+#signal-info {
+  font-size: 11px; color: var(--muted); max-width: 220px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#backend-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+#backend-txt { font-size: 11px; color: var(--muted); }
+#wavelet-badge {
+  display: none; align-items: center; gap: 6px;
+  padding: 4px 10px; border: 1px solid var(--purple);
+  border-radius: var(--radius); background: rgba(180,77,255,.1);
+  font-size: 11px;
+}
+#wavelet-badge .wlbl { color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: .6px; }
+#wavelet-badge .wval { color: var(--purple); font-weight: 700; font-family: 'Space Mono', monospace; }
+#generic-toolbar { display: none; align-items: center; gap: 6px; }
+
+/* ════════════════════════════════════════════
+   WAVEFORM VIEWERS
+════════════════════════════════════════════ */
+#viewers-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px; height: 195px;
+}
+.viewer-wrap {
+  background: var(--bg1); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden; position: relative;
+}
+.viewer-wrap::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--blue), var(--purple));
+}
+.out-viewer::before { background: linear-gradient(90deg, var(--pink), var(--purple)); }
+.v-tag { position: absolute; top: 6px; left: 10px; font-size: 9px; font-weight: 800;
+  letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); z-index: 2; }
+.v-time { position: absolute; top: 5px; right: 10px; font-family: 'Space Mono', monospace;
+  font-size: 11px; color: var(--green); z-index: 2; }
+.viewer-wrap canvas { display: block; width: 100%; height: 100%; background: #040414; cursor: grab; }
+.viewer-wrap canvas:active { cursor: grabbing; }
+
+/* ════════════════════════════════════════════
+   PLAYBACK BAR
+════════════════════════════════════════════ */
+#pb-bar {
+  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+  background: var(--bg1); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 6px 14px;
+}
+input[type=range].speed-r {
+  width: 80px; height: 3px; appearance: none; background: var(--border2);
+  border-radius: 2px; cursor: pointer; outline: none;
+}
+input[type=range].speed-r::-webkit-slider-thumb {
+  appearance: none; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--blue); box-shadow: 0 0 8px var(--blue); cursor: pointer;
+}
+.scale-grp { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.scale-grp label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+.scale-grp input[type=radio] { accent-color: var(--blue); width: 13px; height: 13px; }
+#pb-time { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--green); min-width: 72px; }
+#speed-lbl { font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted); min-width: 40px; }
+
+/* ════════════════════════════════════════════
+   SYSTEM TOGGLE BAR
+════════════════════════════════════════════ */
+#sys-toggle-bar {
+  display: none; align-items: center; justify-content: center; gap: 16px;
+  background: var(--bg1); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 7px 20px;
+}
+.sys-toggle-lbl {
+  font-size: 12px; font-weight: 600; padding: 4px 12px;
+  border-radius: 20px; cursor: pointer; transition: all .25s;
+}
+.sys-toggle-lbl.freq { color: var(--blue); }
+.sys-toggle-lbl.freq.active { background: rgba(56,182,255,.15); box-shadow: 0 0 20px rgba(56,182,255,.25); }
+.sys-toggle-lbl.wav  { color: var(--purple); }
+.sys-toggle-lbl.wav.active  { background: rgba(180,77,255,.15); box-shadow: 0 0 20px rgba(180,77,255,.25); }
+.sys-toggle-lbl.dim  { opacity: .35; }
+.toggle-pill {
+  position: relative; width: 66px; height: 32px;
+  background: var(--bg3); border-radius: 20px; cursor: pointer;
+  transition: border-color .3s, box-shadow .3s;
+  border: 1px solid var(--border2);
+}
+.toggle-pill.freq-on { border-color: var(--blue);   box-shadow: 0 0 16px rgba(56,182,255,.4); }
+.toggle-pill.wav-on  { border-color: var(--purple);  box-shadow: 0 0 16px rgba(180,77,255,.4); }
+.toggle-pill::after {
+  content: ''; position: absolute; top: 4px; left: 4px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue), var(--purple));
+  transition: transform .3s; box-shadow: 0 2px 8px rgba(0,0,0,.5);
+}
+.toggle-pill.wav-on::after { transform: translateX(34px); }
+.toggle-hint { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; }
+
+/* ════════════════════════════════════════════
+   CUSTOM LAYOUT — Dual System
+════════════════════════════════════════════ */
+#custom-layout { display: none; flex-direction: column; gap: 6px; }
+#dual-row { display: grid; grid-template-columns: 1fr 1fr 290px; gap: 6px; }
+
+.sys-panel {
+  background: var(--bg1); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); display: flex; flex-direction: column; overflow: hidden;
+  transition: border-color .3s, box-shadow .3s;
+}
+.sys-panel.active-freq { border-color: rgba(56,182,255,.5);  box-shadow: 0 0 30px rgba(56,182,255,.1); }
+.sys-panel.active-wav  { border-color: rgba(180,77,255,.5);  box-shadow: 0 0 30px rgba(180,77,255,.1); }
+.sys-panel.dimmed      { opacity: .45; pointer-events: none; filter: saturate(.3); }
+.sys-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.sys-title { font-size: 11px; font-weight: 700; }
+.sys-badge { font-size: 10px; padding: 2px 9px; border-radius: 10px; font-weight: 600; }
+.sys-badge.freq   { color: var(--blue);   background: rgba(56,182,255,.1);  border: 1px solid rgba(56,182,255,.3); }
+.sys-badge.wav    { color: var(--purple); background: rgba(180,77,255,.1);  border: 1px solid rgba(180,77,255,.3); }
+.sys-badge.ai     { color: var(--green);  background: rgba(46,255,215,.1);  border: 1px solid rgba(46,255,215,.3); }
+.sys-chart  { height: 210px; position: relative; flex-shrink: 0; }
+.sys-chart canvas  { width: 100% !important; height: 100% !important; }
+.sys-sliders {
+  display: flex; gap: 0; align-items: flex-end; padding: 10px 12px 12px;
+  overflow-x: auto; min-height: 140px; flex-shrink: 0;
+}
+
+/* Spec column */
+#spec-col { display: flex; flex-direction: column; gap: 6px; }
+#spec-col .panel { flex: 1; min-height: 0; }
+#spec-col canvas { display: block; width: 100%; height: 100%; }
+
+/* ════════════════════════════════════════════
+   GENERIC LAYOUT
+════════════════════════════════════════════ */
+#generic-layout { display: none; flex-direction: column; gap: 6px; }
+#generic-analysis { display: grid; grid-template-columns: 1fr 270px 270px; gap: 6px; height: 310px; }
+#generic-analysis .panel { flex: 1; }
+#generic-analysis canvas { display: block; width: 100%; height: 100%; }
+#generic-eq-panel {
+  background: var(--bg1); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+#generic-eq-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 12px; border-bottom: 1px solid var(--border);
+}
+#generic-eq {
+  display: flex; gap: 0; align-items: flex-end; padding: 10px 14px 12px;
+  min-height: 155px; overflow-x: auto;
+}
+
+/* ════════════════════════════════════════════
+   SLIDERS
+════════════════════════════════════════════ */
+.sl-col {
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  padding: 0 10px; flex-shrink: 0; min-width: 64px;
+}
+.sl-val { font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; }
+.sl-val.freq-val  { color: var(--blue); }
+.sl-val.wav-val   { color: var(--purple); }
+.sl-val.ai-val    { color: var(--green); }
+.sl-name { font-size: 10px; color: var(--text); text-align: center;
+  max-width: 62px; word-break: break-word; line-height: 1.3; font-weight: 600; }
+.sl-range { font-size: 9px; color: var(--muted); text-align: center;
+  max-width: 62px; line-height: 1.3; }
+input.eq-sl {
+  -webkit-appearance: slider-vertical; writing-mode: vertical-lr; direction: rtl;
+  width: 26px; height: 100px; padding: 0; border: none; background: transparent; cursor: pointer;
+}
+input.eq-sl.freq-sl { accent-color: var(--blue); }
+input.eq-sl.wav-sl  { accent-color: var(--purple); }
+input.eq-sl.ai-sl   { accent-color: var(--green); }
+input.eq-sl.gen-sl  { accent-color: var(--orange); }
+
+/* ════════════════════════════════════════════
+   AI EQUALIZER — System C
+════════════════════════════════════════════ */
+#ai-eq-wrap {
+  display: none; background: var(--bg1); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+#ai-eq-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 12px; border-bottom: 1px solid var(--border);
+}
+#ai-eq-chart-wrap { height: 190px; position: relative; }
+#ai-eq-chart-wrap canvas { width: 100% !important; height: 100% !important; }
+#ai-eq-sliders {
+  display: flex; gap: 0; align-items: flex-end; padding: 10px 14px 12px;
+  min-height: 140px; overflow-x: auto;
+}
+.ai-empty-hint { color: var(--muted); font-size: 12px; padding: 24px; align-self: center; }
+
+/* ════════════════════════════════════════════
+   STEM VIEWERS
+════════════════════════════════════════════ */
+#stem-viewers {
+  display: none; background: var(--bg1); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+#stem-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 12px; border-bottom: 1px solid var(--border);
+}
+#stem-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 8px; padding: 10px; max-height: 520px; overflow-y: auto;
+}
+.stem-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+  transition: border-color .2s, box-shadow .2s;
+}
+.stem-card:hover { border-color: rgba(46,255,215,.4); box-shadow: 0 0 20px rgba(46,255,215,.1); }
+.stem-card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 9px; border-bottom: 1px solid var(--border);
+  background: rgba(46,255,215,.05);
+}
+.stem-card-name { font-size: 12px; font-weight: 700; color: var(--green); }
+.stem-card-info { font-size: 10px; color: var(--muted); }
+.stem-wave { display: block; width: 100%; height: 58px; background: #040414; }
+.stem-fft  { height: 80px; position: relative; background: #040414; }
+.stem-fft canvas { width: 100% !important; height: 100% !important; }
+.stem-btns { display: flex; gap: 4px; padding: 5px 7px; background: var(--bg1); }
+.stem-play-btn {
+  flex: 1; padding: 4px 0; font-size: 11px; cursor: pointer;
+  border-radius: 5px; border: 1px solid var(--green);
+  background: rgba(46,255,215,.08); color: var(--green);
+  font-family: inherit; transition: background .15s;
+}
+.stem-play-btn:hover  { background: rgba(46,255,215,.2); }
+.stem-play-btn.active { border-color: var(--red); background: rgba(255,68,102,.1); color: var(--red); }
+
+/* ════════════════════════════════════════════
+   AI ANALYSIS PANEL
+════════════════════════════════════════════ */
+#ai-panel {
+  display: none; background: var(--bg1); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+#ai-panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 12px; border-bottom: 1px solid var(--border);
+}
+#ai-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 7px; padding: 10px; max-height: 380px; overflow-y: auto;
+}
+.ai-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px; text-align: center;
+  transition: border-color .2s;
+}
+.ai-card:hover { border-color: var(--border2); }
+.ai-ct { font-size: 9px; color: var(--muted); text-transform: uppercase;
+  letter-spacing: .6px; margin-bottom: 5px; }
+.ai-cv { font-size: 17px; font-weight: 700; color: var(--blue); font-family: 'Space Mono', monospace; }
+.ai-sub { font-size: 10px; color: var(--muted); margin-top: 3px; }
+.ai-section-divider {
+  grid-column: 1/-1; padding: 8px 4px 4px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px;
+  color: var(--muted); border-bottom: 1px solid var(--border);
+}
+
+/* ════════════════════════════════════════════
+   VOICES TIP
+════════════════════════════════════════════ */
+#voices-tip {
+  display: none; padding: 8px 14px; border-radius: var(--radius);
+  border: 1px solid rgba(180,77,255,.4); background: rgba(180,77,255,.08);
+  font-size: 11px; color: var(--purple); line-height: 1.6;
+}
+
+/* ════════════════════════════════════════════
+   LOADING + TOAST
+════════════════════════════════════════════ */
+#loading {
+  position: fixed; inset: 0; background: rgba(5,5,16,.85);
+  display: none; align-items: center; justify-content: center;
+  z-index: 9999; gap: 12px; font-size: 13px; backdrop-filter: blur(3px);
+}
+#loading.show { display: flex; }
+.spinner {
+  width: 22px; height: 22px; border: 2px solid var(--border2);
+  border-top-color: var(--cyan); border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#toast {
+  position: fixed; bottom: 20px; left: 50%; z-index: 9998;
+  transform: translateX(-50%) translateY(80px);
+  padding: 9px 22px; border-radius: 20px; font-size: 13px;
+  pointer-events: none; opacity: 0;
+  transition: transform .28s, opacity .28s; max-width: 94vw; text-align: center;
+}
+#toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+#toast.info    { background: #1a1a40; border: 1px solid #4444aa; color: #aabbff; }
+#toast.success { background: #0d3020; border: 1px solid #338855; color: #66ffaa; }
+#toast.error   { background: #380d1a; border: 1px solid #882244; color: #ffaaaa; }
+
+/* ════════════════════════════════════════════
+   RESPONSIVE
+════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  #dual-row { grid-template-columns: 1fr 1fr; }
+  #spec-col { display: none; }
+  #viewers-row { grid-template-columns: 1fr; height: 360px; }
+  #generic-analysis { grid-template-columns: 1fr; height: auto; }
+}
+
+/* ══════════════════════════════════════════
+   VOICES COMPARE PANEL — SepFormer vs Wavelet
+══════════════════════════════════════════ */
+#voices-compare-panel {
+  display: none; background: var(--bg1); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+#vc-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 14px; border-bottom: 1px solid var(--border);
+  background: linear-gradient(90deg,rgba(46,255,215,.05),rgba(180,77,255,.05));
+}
+#vc-controls {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--bg2);
+}
+#vc-body { padding: 10px 14px; display: flex; flex-direction: column; gap: 10px; }
+.vc-metrics-table { width: 100%; border-collapse: collapse; }
+.vc-metrics-table th {
+  padding: 7px 14px; font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .7px; color: var(--muted); border-bottom: 2px solid var(--border); text-align: center;
+}
+.vc-metrics-table td {
+  padding: 7px 14px; text-align: center; border-bottom: 1px solid var(--border);
+  font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700;
+}
+.vc-metrics-table tr:last-child td { border-bottom: none; font-size: 13px; }
+.vc-winner-wav  { color: var(--green); }
+.vc-winner-ai   { color: var(--purple); }
+.vc-winner-tie  { color: var(--yellow); }
+.vc-metric-name { color: var(--muted); font-family: inherit; font-size: 11px; }
+.vc-charts-row {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+}
+.vc-chart-box {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden;
+}
+.vc-chart-title {
+  font-size: 9px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase;
+  color: var(--muted); padding: 5px 9px; border-bottom: 1px solid var(--border);
+}
+.vc-chart-inner { height: 155px; position: relative; }
+.vc-chart-inner canvas { width: 100% !important; height: 100% !important; }
+.vc-scales-row {
+  display: flex; gap: 0; align-items: flex-end; padding: 6px 8px;
+  overflow-x: auto; background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); min-height: 128px;
+}
+.badge-sepformer  { color: var(--purple); background: rgba(180,77,255,.1);
+  border: 1px solid rgba(180,77,255,.3); font-size: 10px; padding: 2px 8px;
+  border-radius: 10px; font-weight: 600; }
+.badge-convtasnet { color: var(--blue); background: rgba(56,182,255,.1);
+  border: 1px solid rgba(56,182,255,.3); font-size: 10px; padding: 2px 8px;
+  border-radius: 10px; font-weight: 600; }
+.badge-fallback   { color: var(--yellow); background: rgba(255,224,102,.1);
+  border: 1px solid rgba(255,224,102,.3); font-size: 10px; padding: 2px 8px;
+  border-radius: 10px; font-weight: 600; }
+@media (max-width: 900px) { .vc-charts-row { grid-template-columns: 1fr; } }
+
+/* ══════════════════════════════════════════
+   ANIMALS COMPARE PANEL — YAMNet vs Wavelet
+══════════════════════════════════════════ */
+#animals-compare-panel {
+  display: none; background: var(--bg1); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+#ac-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 14px; border-bottom: 1px solid var(--border);
+  background: linear-gradient(90deg,rgba(255,138,0,.06),rgba(46,255,215,.05));
+}
+#ac-controls {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--bg2);
+}
+#ac-body { padding: 10px 14px; display: flex; flex-direction: column; gap: 10px; }
+.ac-scales-row {
+  display: flex; gap: 0; align-items: flex-end; padding: 6px 8px;
+  overflow-x: auto; background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); min-height: 128px;
+}
+.badge-yamnet { color: var(--orange); background: rgba(255,138,0,.1);
+  border: 1px solid rgba(255,138,0,.3); font-size: 10px; padding: 2px 8px;
+  border-radius: 10px; font-weight: 600; }
+.badge-cnn { color: var(--blue); background: rgba(56,182,255,.1);
+  border: 1px solid rgba(56,182,255,.3); font-size: 10px; padding: 2px 8px;
+  border-radius: 10px; font-weight: 600; }
+
+/* ══════════════════════════════════════════
+   ECG PANEL — ResNet Analysis + Compare
+══════════════════════════════════════════ */
+#ecg-panel {
+  display: none; background: var(--bg1); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+}
+#ecg-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 7px 14px; border-bottom: 1px solid var(--border);
+  background: linear-gradient(90deg,rgba(255,68,102,.06),rgba(255,138,0,.05));
+}
+#ecg-controls {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 8px 14px; border-bottom: 1px solid var(--border); background: var(--bg2);
+}
+#ecg-body { padding: 10px 14px; display: flex; flex-direction: column; gap: 10px; }
+
+/* Gain sliders for ECG classes */
+.ecg-scales-row {
+  display: flex; gap: 0; align-items: flex-end; padding: 6px 8px;
+  overflow-x: auto; background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius); min-height: 128px;
+}
+/* Beat summary cards */
+.ecg-summary-row {
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.ecg-beat-card {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 8px 14px; min-width: 110px; text-align: center;
+  transition: border-color .2s;
+}
+.ecg-beat-card:hover { border-color: var(--red); }
+.ecg-beat-class { font-size: 10px; color: var(--muted); text-transform: uppercase;
+  letter-spacing: .6px; margin-bottom: 4px; }
+.ecg-beat-count { font-size: 20px; font-weight: 800; color: var(--red);
+  font-family: 'Space Mono', monospace; }
+.ecg-beat-pct   { font-size: 10px; color: var(--muted); margin-top: 2px; }
+/* Heart rate display */
+.ecg-hr-display {
+  display: flex; align-items: center; gap: 16px; padding: 8px 14px;
+  background: var(--bg2); border: 1px solid rgba(255,68,102,.3);
+  border-radius: var(--radius); font-family: 'Space Mono', monospace;
+}
+.ecg-hr-val { font-size: 32px; font-weight: 800; color: var(--red); }
+.ecg-hr-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; }
+/* badge */
+.badge-resnet { color: var(--red); background: rgba(255,68,102,.1);
+  border: 1px solid rgba(255,68,102,.3); font-size: 10px; padding: 2px 8px;
+  border-radius: 10px; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- ══ TOOLBAR ═══════════════════════════════════════════════════════════ -->
+<div id="toolbar">
+  <span id="app-logo">⚡ EQ STUDIO</span>
+  <div class="sep"></div>
+
+  <span class="lbl">Mode</span>
+  <select id="mode-sel">
+    <option value="instruments">🎸 Instruments</option>
+    <option value="animals">🐾 Animals</option>
+    <option value="voices">🗣 Voices</option>
+    <option value="ecg">❤️ ECG</option>
+    <option value="generic">⚙️ Generic</option>
+  </select>
+
+  <div class="sep"></div>
+  <label class="file-btn">📂 Load Signal
+    <input type="file" id="file-signal" accept=".wav,.mp3,.ogg,.flac,.csv,.dat,.hea,.npy,.txt">
+  </label>
+
+  <div id="generic-toolbar">
+    <div class="sep"></div>
+    <label class="file-btn btn-orange">📋 Load Schema
+      <input type="file" id="file-schema" accept=".json">
+    </label>
+    <button class="btn btn-orange" id="save-schema-btn">💾 Save Schema</button>
+  </div>
+
+  <div id="wavelet-badge">
+    <span class="wlbl">Wavelet</span>
+    <span class="wval" id="wval-lbl">db4</span>
+  </div>
+
+  <div class="sep"></div>
+  <button class="btn" id="save-cfg-btn">📤 Save Config</button>
+  <button class="btn" id="load-cfg-btn">📥 Load Config</button>
+  <input type="file" id="file-config" accept=".json" style="display:none">
+
+  <div class="sep"></div>
+  <button class="btn btn-blue" id="ai-btn">🤖 AI Compare</button>
+
+  <div class="spacer"></div>
+  <span id="signal-info">No signal loaded</span>
+  <div class="sep"></div>
+  <div id="backend-dot"></div>
+  <span id="backend-txt">Connecting…</span>
+</div>
+
+<!-- ══ WAVEFORM VIEWERS ══════════════════════════════════════════════════ -->
+<div id="viewers-row">
+  <div class="viewer-wrap">
+    <span class="v-tag">INPUT</span>
+    <span class="v-time" id="in-time">00:00.000</span>
+    <canvas id="cv-in" width="700" height="160"></canvas>
+  </div>
+  <div class="viewer-wrap out-viewer">
+    <span class="v-tag">OUTPUT</span>
+    <span class="v-time" id="out-time">00:00.000</span>
+    <canvas id="cv-out" width="700" height="160"></canvas>
+  </div>
+</div>
+
+<!-- ══ PLAYBACK BAR ══════════════════════════════════════════════════════ -->
+<div id="pb-bar">
+  <div style="display:flex;gap:4px">
+    <button class="btn btn-green" id="btn-play">▶ Play</button>
+    <button class="btn" id="btn-pause">⏸ Pause</button>
+    <button class="btn" id="btn-stop">⏹ Stop</button>
+    <button class="btn" id="btn-audio">🔊 Audio Out</button>
+  </div>
+  <div class="sep"></div>
+  <span class="lbl">Speed</span>
+  <input type="range" class="speed-r" id="speed-r" min="25" max="400" value="100">
+  <span id="speed-lbl">1.00×</span>
+  <div class="sep"></div>
+  <div style="display:flex;gap:4px;flex-wrap:wrap">
+    <button class="btn" id="btn-zi">🔍+</button>
+    <button class="btn" id="btn-zo">🔍−</button>
+    <button class="btn" id="btn-pl">◀</button>
+    <button class="btn" id="btn-pr">▶</button>
+    <button class="btn" id="btn-rst">↺ Reset</button>
+    <button class="btn" id="btn-spec-tog">👁 Spectrograms</button>
+  </div>
+  <div class="sep"></div>
+  <div class="scale-grp">
+    <span class="lbl">FFT Scale</span>
+    <label><input type="radio" name="fscale" value="linear" checked> Linear</label>
+    <label><input type="radio" name="fscale" value="audiogram"> Audiogram</label>
+  </div>
+  <div class="spacer"></div>
+  <span id="pb-time" class="mono">00:00.000</span>
+</div>
+
+<!-- ══ SYSTEM TOGGLE ═════════════════════════════════════════════════════ -->
+<div id="sys-toggle-bar">
+  <span class="sys-toggle-lbl freq active" id="lbl-freq">⬡ Frequency Domain</span>
+  <div class="toggle-pill freq-on" id="sys-toggle-pill"></div>
+  <span class="sys-toggle-lbl wav dim" id="lbl-wav">⬡ Wavelet Domain</span>
+  <div class="sep"></div>
+  <span class="toggle-hint" id="toggle-hint">ACTIVE: FREQUENCY</span>
+</div>
+
+<!-- ══ VOICES TIP ════════════════════════════════════════════════════════ -->
+<div id="voices-tip">
+  💡 <b>Voices Mode:</b> Human voice frequencies overlap heavily — System A &amp; B sliders target
+  frequency bands. For per-speaker volume control, use <b>System C (AI Separation)</b> below.
+</div>
+
+<!-- ══ CUSTOM DUAL LAYOUT ════════════════════════════════════════════════ -->
+<div id="custom-layout">
+  <div id="dual-row">
+
+    <!-- System A — Frequency -->
+    <div class="sys-panel active-freq" id="panel-freq" data-sys="freq">
+      <div class="sys-head">
+        <span class="sys-title" style="color:var(--blue)">⬡ System A — Frequency</span>
+        <span class="sys-badge freq">FFT / Fourier</span>
+      </div>
+      <div class="sys-chart"><canvas id="cv-freq-c"></canvas></div>
+      <div class="sys-sliders" id="freq-sliders"></div>
+    </div>
+
+    <!-- System B — Wavelet -->
+    <div class="sys-panel dimmed" id="panel-wav" data-sys="wav">
+      <div class="sys-head">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="sys-title" style="color:var(--purple)">⬡ System B — Wavelet</span>
+          <span class="sys-badge wav" id="sys-b-wavelet-badge">db4</span>
+        </div>
+        <span id="snr-compare" style="font-size:10px;color:var(--muted)"></span>
+      </div>
+      <div class="sys-chart"><canvas id="cv-wav-c"></canvas></div>
+      <div class="sys-sliders" id="wav-sliders"></div>
+    </div>
+
+    <!-- Spectrograms -->
+    <div id="spec-col">
+      <div class="panel" style="flex:1">
+        <div class="panel-head"><span class="panel-title">Input Spectrogram</span></div>
+        <div style="flex:1;position:relative"><canvas id="cv-ispec-c" width="280" height="145"></canvas></div>
+      </div>
+      <div class="panel" style="flex:1">
+        <div class="panel-head"><span class="panel-title">Output Spectrogram</span></div>
+        <div style="flex:1;position:relative"><canvas id="cv-ospec-c" width="280" height="145"></canvas></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ GENERIC LAYOUT ════════════════════════════════════════════════════ -->
+<div id="generic-layout">
+  <div id="generic-analysis">
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">Frequency Spectrum</span>
+        <span style="font-size:10px;color:var(--muted)">
+          <span style="color:var(--blue)">■</span> Input &nbsp;
+          <span style="color:var(--pink)">■</span> Output
+        </span>
+      </div>
+      <div style="flex:1;position:relative"><canvas id="cv-freq-g"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">Input Spectrogram</span></div>
+      <div style="flex:1;position:relative"><canvas id="cv-ispec-g" width="265" height="165"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><span class="panel-title">Output Spectrogram</span></div>
+      <div style="flex:1;position:relative"><canvas id="cv-ospec-g" width="265" height="165"></canvas></div>
+    </div>
+  </div>
+  <div id="generic-eq-panel">
+    <div id="generic-eq-head">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="panel-title">Equalizer</span>
+        <span id="g-mode-name" style="font-size:11px;color:var(--orange);font-weight:700">Generic</span>
+        <span style="font-size:10px;color:var(--muted)">— Frequency Domain</span>
+      </div>
+      <span id="schema-hint" style="font-size:10px;color:var(--muted)">Load a schema to generate sliders</span>
+    </div>
+    <div id="generic-eq">
+      <div id="g-empty" style="color:var(--muted);padding:28px;font-size:13px">
+        📋 Click <b style="color:var(--orange)">Load Schema</b> to auto-generate sliders,
+        or use <b style="color:var(--orange)">＋ Add Band</b>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SYSTEM C — AI EQUALIZER ════════════════════════════════════════════ -->
+<div id="ai-eq-wrap">
+  <div id="ai-eq-head">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="sys-title" style="color:var(--green)">⬡ System C — AI Stem Mixing</span>
+      <span class="sys-badge ai">Source Separation</span>
+      <span id="ai-eq-mode-lbl" style="font-size:11px;color:var(--muted)"></span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span id="ai-eq-status" style="font-size:11px;color:var(--muted)">Separate signal to build sliders</span>
+      <button class="btn btn-green" id="ai-sep-btn" style="font-size:11px;padding:4px 11px">⚙ Separate</button>
+    </div>
+  </div>
+  <div id="ai-eq-chart-wrap"><canvas id="cv-ai-eq"></canvas></div>
+  <div id="ai-eq-sliders">
+    <div class="ai-empty-hint">Click ⚙ Separate to run AI separation and generate per-stem sliders</div>
+  </div>
+</div>
+
+<!-- ══ STEM VIEWERS ══════════════════════════════════════════════════════ -->
+<div id="stem-viewers">
+  <div id="stem-head">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="panel-title">AI Separated Components</span>
+      <span id="stem-count-lbl" style="font-size:11px;color:var(--green)"></span>
+    </div>
+    <button class="btn btn-pink" style="font-size:11px;padding:3px 9px"
+      onclick="document.getElementById('stem-viewers').style.display='none'">✕ Hide</button>
+  </div>
+  <div id="stem-grid"></div>
+</div>
+
+<!-- ══ AI ANALYSIS PANEL ══════════════════════════════════════════════════ -->
+<div id="ai-panel">
+  <div id="ai-panel-head">
+    <span class="panel-title">🤖 AI Analysis Results</span>
+    <button class="btn btn-pink" style="font-size:11px;padding:3px 9px"
+      onclick="document.getElementById('ai-panel').style.display='none'">✕ Close</button>
+  </div>
+  <div id="ai-grid"></div>
+</div>
+
+
+
+<!-- ══ ANIMALS: YAMNET vs WAVELET COMPARISON ════════════════════════════ -->
+<div id="animals-compare-panel">
+  <div id="ac-head">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="panel-title">🔬 YAMNet vs Wavelet — Animal Isolation</span>
+      <span id="ac-backend-badge" class="badge-yamnet">YAMNet</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span id="ac-status" style="font-size:11px;color:var(--muted)">Adjust scales then click Run</span>
+      <button class="btn btn-orange" id="ac-run-btn" style="font-size:11px;padding:4px 11px">▶ Run Comparison</button>
+      <button class="btn btn-pink" style="font-size:11px;padding:3px 9px"
+        onclick="document.getElementById('animals-compare-panel').style.display='none'">✕ Close</button>
+    </div>
+  </div>
+
+  <!-- Per-animal scales + wavelet selector -->
+  <div id="ac-controls">
+    <span class="lbl">Per-animal scales</span>
+    <div class="ac-scales-row" id="ac-scales-row">
+      <div style="color:var(--muted);font-size:12px;padding:8px">
+        Run ⚙ Separate first to detect animals and build sliders.
+      </div>
+    </div>
+    <div class="sep"></div>
+    <span class="lbl">Wavelet</span>
+    <select id="ac-wavelet-sel" style="font-size:12px">
+      <option value="db4" selected>db4 (optimal for animals)</option>
+      <option value="haar">haar</option>
+      <option value="db6">db6</option>
+      <option value="coif3">coif3</option>
+      <option value="sym5">sym5</option>
+    </select>
+    <span class="lbl">Levels</span>
+    <select id="ac-level-sel" style="font-size:12px">
+      <option value="4">4</option>
+      <option value="6" selected>6</option>
+      <option value="8">8</option>
+    </select>
+    <div class="sep"></div>
+    <span class="lbl">Mask Power</span>
+    <select id="ac-mask-power-sel" style="font-size:12px" title="Higher = cleaner isolation, may clip quiet sounds">
+      <option value="1.0">1.0 — soft</option>
+      <option value="2.0">2.0 — medium</option>
+      <option value="2.5" selected>2.5 — default</option>
+      <option value="3.0">3.0 — sharp</option>
+    </select>
+  </div>
+
+  <div id="ac-body">
+    <!-- Metrics table (shown after run) -->
+    <div id="ac-metrics-wrap" style="display:none">
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;
+                  letter-spacing:.8px;color:var(--muted);padding-bottom:6px">
+        Performance Metrics
+      </div>
+      <table class="vc-metrics-table">
+        <thead>
+          <tr>
+            <th style="text-align:left">Metric</th>
+            <th style="color:var(--green)">Wavelet (db4)</th>
+            <th style="color:var(--orange)">YAMNet</th>
+            <th>Winner</th>
+          </tr>
+        </thead>
+        <tbody id="ac-metrics-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Charts row (shown after run) -->
+    <div class="vc-charts-row" id="ac-charts-row" style="display:none">
+      <div class="vc-chart-box">
+        <div class="vc-chart-title">Input Spectrum</div>
+        <div class="vc-chart-inner"><canvas id="cv-ac-in"></canvas></div>
+      </div>
+      <div class="vc-chart-box">
+        <div class="vc-chart-title" style="color:var(--green)">Wavelet Output</div>
+        <div class="vc-chart-inner"><canvas id="cv-ac-wav"></canvas></div>
+      </div>
+      <div class="vc-chart-box">
+        <div class="vc-chart-title" style="color:var(--orange)">YAMNet Output</div>
+        <div class="vc-chart-inner"><canvas id="cv-ac-ai"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Audio play buttons (shown after run) -->
+    <div id="ac-audio-row" style="display:none;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-green"  id="ac-play-wav-btn">🔊 Play Wavelet Output</button>
+      <button class="btn btn-orange" id="ac-play-ai-btn">🔊 Play YAMNet Output</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ VOICES: SEPFORMER vs WAVELET COMPARISON ══════════════════════════ -->
+<div id="voices-compare-panel">
+  <div id="vc-head">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="panel-title">🔬 SepFormer vs Wavelet — Comparison</span>
+      <span id="vc-backend-badge" class="badge-sepformer">SepFormer</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span id="vc-status" style="font-size:11px;color:var(--muted)">Adjust scales then click Run</span>
+      <button class="btn btn-purple" id="vc-run-btn" style="font-size:11px;padding:4px 11px">▶ Run Comparison</button>
+      <button class="btn btn-pink" style="font-size:11px;padding:3px 9px"
+        onclick="document.getElementById('voices-compare-panel').style.display='none'">✕ Close</button>
+    </div>
+  </div>
+
+  <!-- Scales + wavelet selector -->
+  <div id="vc-controls">
+    <span class="lbl">Per-speaker scales</span>
+    <div class="vc-scales-row" id="vc-scales-row">
+      <div style="color:var(--muted);font-size:12px;padding:8px">
+        Run AI separation first (⚙ Separate above), then come back here.
+      </div>
+    </div>
+    <div class="sep"></div>
+    <span class="lbl">Wavelet</span>
+    <select id="vc-wavelet-sel" style="font-size:12px">
+      <option value="coif3" selected>coif3 (recommended)</option>
+      <option value="haar">haar</option>
+      <option value="db4">db4</option>
+      <option value="db6">db6</option>
+      <option value="sym5">sym5</option>
+    </select>
+    <span class="lbl">Levels</span>
+    <select id="vc-level-sel" style="font-size:12px">
+      <option value="4">4</option>
+      <option value="6" selected>6</option>
+      <option value="8">8</option>
+    </select>
+  </div>
+
+  <div id="vc-body">
+    <!-- Metrics table -->
+    <div id="vc-metrics-wrap" style="display:none">
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;
+                  letter-spacing:.8px;color:var(--muted);padding-bottom:6px">
+        Performance Metrics
+      </div>
+      <table class="vc-metrics-table" id="vc-metrics-table">
+        <thead>
+          <tr>
+            <th style="text-align:left">Metric</th>
+            <th style="color:var(--green)">Wavelet</th>
+            <th style="color:var(--purple)">AI (SepFormer)</th>
+            <th>Winner</th>
+          </tr>
+        </thead>
+        <tbody id="vc-metrics-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Charts row -->
+    <div class="vc-charts-row" id="vc-charts-row" style="display:none">
+      <div class="vc-chart-box">
+        <div class="vc-chart-title">Frequency — Input</div>
+        <div class="vc-chart-inner"><canvas id="cv-vc-in"></canvas></div>
+      </div>
+      <div class="vc-chart-box">
+        <div class="vc-chart-title" style="color:var(--green)">Wavelet Output</div>
+        <div class="vc-chart-inner"><canvas id="cv-vc-wav"></canvas></div>
+      </div>
+      <div class="vc-chart-box">
+        <div class="vc-chart-title" style="color:var(--purple)">AI Output</div>
+        <div class="vc-chart-inner"><canvas id="cv-vc-ai"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Audio play buttons -->
+    <div id="vc-audio-row" style="display:none;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-green" id="vc-play-wav-btn">🔊 Play Wavelet Output</button>
+      <button class="btn btn-purple" id="vc-play-ai-btn">🔊 Play AI Output</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ ECG: ResNet Analysis + Equaliser ═══════════════════════════════════ -->
+<div id="ecg-panel">
+  <div id="ecg-head">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="panel-title">❤️ ECG ResNet — Arrhythmia Analysis</span>
+      <span class="badge-resnet" id="ecg-backend-badge">ECGResNet</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span id="ecg-status" style="font-size:11px;color:var(--muted)">Load an ECG signal then click Analyse</span>
+      <button class="btn" style="border-color:var(--red);color:var(--red);font-size:11px;padding:4px 11px"
+        id="ecg-analyse-btn">🔬 Analyse</button>
+      <button class="btn btn-pink" style="font-size:11px;padding:3px 9px"
+        onclick="document.getElementById('ecg-panel').style.display='none'">✕ Close</button>
+    </div>
+  </div>
+
+  <!-- Heart rate + beat summary (shown after analysis) -->
+  <div id="ecg-summary-wrap" style="display:none;padding:10px 14px 0;display:flex;flex-direction:column;gap:8px">
+    <div class="ecg-hr-display">
+      <div>
+        <div class="ecg-hr-lbl">Heart Rate</div>
+        <div class="ecg-hr-val" id="ecg-hr-val">—</div>
+        <div class="ecg-hr-lbl">bpm</div>
+      </div>
+      <div style="width:1px;height:40px;background:var(--border)"></div>
+      <div>
+        <div class="ecg-hr-lbl">RR Std Dev</div>
+        <div style="font-size:16px;font-weight:700;color:var(--orange);font-family:monospace" id="ecg-rr-val">—</div>
+        <div class="ecg-hr-lbl">ms</div>
+      </div>
+      <div style="width:1px;height:40px;background:var(--border)"></div>
+      <div>
+        <div class="ecg-hr-lbl">Total Beats</div>
+        <div style="font-size:16px;font-weight:700;color:var(--blue);font-family:monospace" id="ecg-total-beats">—</div>
+      </div>
+      <div style="width:1px;height:40px;background:var(--border)"></div>
+      <div>
+        <div class="ecg-hr-lbl">Dominant</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);font-family:monospace" id="ecg-dominant">—</div>
+      </div>
+    </div>
+    <div class="ecg-summary-row" id="ecg-beats-row"></div>
+  </div>
+
+  <!-- Per-class gain controls -->
+  <div id="ecg-controls">
+    <span class="lbl">Per-class gains (System C)</span>
+    <div class="ecg-scales-row" id="ecg-scales-row">
+      <div style="color:var(--muted);font-size:12px;padding:10px">
+        Click 🔬 Analyse to detect arrhythmia classes and generate sliders.
+      </div>
+    </div>
+    <div class="sep"></div>
+    <span class="lbl">Noise gain</span>
+    <select id="ecg-noise-sel" style="font-size:12px">
+      <option value="0.0">0.0 — suppress background</option>
+      <option value="0.5">0.5 — reduce background</option>
+      <option value="1.0" selected>1.0 — keep background</option>
+    </select>
+    <button class="btn" style="border-color:var(--red);color:var(--red);font-size:11px;padding:4px 10px"
+      id="ecg-eq-btn" disabled>▶ Equalise</button>
+    <button class="btn btn-orange" style="font-size:11px;padding:4px 10px"
+      id="ecg-compare-btn" disabled>📊 Compare Wavelet vs ResNet</button>
+  </div>
+
+  <div id="ecg-body">
+    <!-- Frequency chart (shown after equalise) -->
+    <div id="ecg-freq-wrap" style="display:none">
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);padding-bottom:6px">
+        Frequency Spectrum — Input vs Equalised Output
+      </div>
+      <div class="vc-charts-row">
+        <div class="vc-chart-box">
+          <div class="vc-chart-title">Input ECG</div>
+          <div class="vc-chart-inner"><canvas id="cv-ecg-in"></canvas></div>
+        </div>
+        <div class="vc-chart-box">
+          <div class="vc-chart-title" style="color:var(--red)">ResNet Equalised</div>
+          <div class="vc-chart-inner"><canvas id="cv-ecg-out"></canvas></div>
+        </div>
+        <div class="vc-chart-box">
+          <div class="vc-chart-title" style="color:var(--green)">Wavelet Equalised (db4)</div>
+          <div class="vc-chart-inner"><canvas id="cv-ecg-wav"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metrics compare table (shown after compare) -->
+    <div id="ecg-compare-wrap" style="display:none">
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);padding-bottom:6px">
+        Wavelet vs ResNet Equalisation Metrics
+      </div>
+      <table class="vc-metrics-table">
+        <thead>
+          <tr>
+            <th style="text-align:left">Metric</th>
+            <th style="color:var(--green)">Wavelet (db4)</th>
+            <th style="color:var(--red)">ECG ResNet</th>
+            <th>Winner</th>
+          </tr>
+        </thead>
+        <tbody id="ecg-compare-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Audio buttons -->
+    <div id="ecg-audio-row" style="display:none;gap:8px;flex-wrap:wrap">
+      <button class="btn" style="border-color:var(--red);color:var(--red)" id="ecg-play-out-btn">🔊 Play Equalised Output</button>
+      <button class="btn btn-green" id="ecg-play-wav-btn">🔊 Play Wavelet Output</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LOADING + TOAST ════════════════════════════════════════════════════ -->
+<div id="loading"><div class="spinner"></div><span id="loading-msg">Processing…</span></div>
+<div id="toast"></div>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+const BASE = 'http://localhost:8000/api';
+
+/* ── Utilities ────────────────────────────────────────────────────────── */
+function toast(msg, type='info', ms=2800) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = ''; el.classList.add('show', type);
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), ms);
+}
+function setLoading(show, msg='Processing…') {
+  document.getElementById('loading-msg').textContent = msg;
+  document.getElementById('loading').classList.toggle('show', show);
+}
+function fmt(s) {
+  const m = Math.floor(s/60), ss = Math.floor(s%60), ms = Math.floor((s%1)*1000);
+  return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}.${String(ms).padStart(3,'0')}`;
+}
+function dlJSON(data, fn) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)], {type:'application/json'}));
+  a.download = fn; a.click(); URL.revokeObjectURL(a.href);
+}
+async function readJSON(file) {
+  return new Promise((res,rej) => {
+    const r = new FileReader();
+    r.onload = e => { try { res(JSON.parse(e.target.result)); } catch { rej(new Error('Invalid JSON')); } };
+    r.onerror = () => rej(new Error('Read failed'));
+    r.readAsText(file);
+  });
+}
+// Normalise raw config JSON from backend or file
+function normaliseConfig(raw) {
+  const src = raw.sliders || raw.bands || [];
+  return {
+    name: raw.mode || raw.name || 'Unknown',
+    sliders: src.map((s,i) => ({
+      id:          s.id != null ? s.id : i+1,
+      name:        s.name  || s.label || `Band ${i+1}`,
+      freq_ranges: (s.ranges || s.freq_ranges || []).map(r => Array.isArray(r) ? r : [r.min, r.max])
+    }))
+  };
+}
+function denormaliseConfig(cfg) {
+  return {
+    mode: cfg.name,
+    sliders: cfg.sliders.map(s => ({
+      id: s.id, name: s.name,
+      ranges: s.freq_ranges.map(r => ({ min: r[0], max: r[1] }))
+    }))
+  };
+}
+
+/* ── API layer ────────────────────────────────────────────────────────── */
+const API = {
+  async _f(path, opts={}) {
+    try {
+      const r = await fetch(BASE + path, opts);
+      return await r.json().catch(() => ({ error: 'Bad JSON response' }));
+    } catch(e) { return { error: e.message }; }
+  },
+  ping:          ()      => API._f('/ping'),
+  loadSettings:  mode    => API._f(`/settings/${mode}`),
+  modeInfo:      mode    => API._f(`/mode-info/${mode}`),
+  getSignal:     sid     => API._f(`/signal/${sid}`),
+  getSpectrogram:sid     => API._f(`/spectrogram/${sid}`),
+  upload: file => { const fd = new FormData(); fd.append('file', file); return API._f('/upload', {method:'POST', body:fd}); },
+  equalize: (sid, fGains, wGains, mode) => API._f('/equalize', {method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({signal_id:sid, freq_gains:fGains, wavelet_gains:wGains, mode})}),
+  runAI:     (sid,mode)       => API._f('/ai/run', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({signal_id:sid,mode})}),
+  aiStems:   (sid,mode)       => API._f('/ai-stems', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({signal_id:sid,mode})}),
+  aiStemData:(sid,mode,name)  => API._f('/ai-stem-data', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({signal_id:sid,mode,stem_name:name})}),
+  aiEqualize:(sid,mode,gains) => API._f('/ai-equalize', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({signal_id:sid,mode,gains})})
+};
+
+/* ── App State ────────────────────────────────────────────────────────── */
+const S = {
+  mode:'instruments', modeType:'custom', config:null,
+  freqGains:{}, wavGains:{}, aiGains:{},
+  inputSid:null, inputSamples:null, outputSamples:null, outputB64:null,
+  sr:44100, fftIn:null, fftOut:null, specIn:null, specOut:null,
+  optWavelet:'db4', fftScale:'linear',
+  isPlaying:false, currentTime:0, activeSystem:'freq',
+  stemAudio:{}  // name -> AudioBufferSourceNode
+};
+
+/* ══════════════════════════════════════════
+   CINE VIEWER
+══════════════════════════════════════════ */
+class CineViewer {
+  constructor(canvasId, color='#38b6ff') {
+    this.cv    = document.getElementById(canvasId);
+    this.ctx   = this.cv.getContext('2d');
+    this.color = color;
+    this.sig   = null; this.sr = 44100;
+    this.vs = 0; this.ve = 0;
+    this.speed = 1; this.anim = null;
+    this.partner = null; this._syncing = false;
+    this._drag = false; this._dsx = 0; this._dvs = 0;
+    this._initEvents();
+    this._empty();
+  }
+  _initEvents() {
+    const c = this.cv;
+    c.addEventListener('mousedown', e => {
+      if(!this.sig) return;
+      this._drag=true; this._dsx=e.offsetX; this._dvs=this.vs;
+    });
+    c.addEventListener('mousemove', e => {
+      if(!this._drag || !this.sig) return;
+      const shift = -(e.offsetX - this._dsx) / c.clientWidth * (this.ve - this.vs);
+      this.vs = Math.max(0, this._dvs + shift);
+      this.ve = this.vs + (this.ve - this.vs);
+      if(this.ve > this.sig.length) { this.ve = this.sig.length; this.vs = this.ve - (this.ve-this.vs); }
+      this.draw(); this._syncPartner();
+    });
+    c.addEventListener('mouseup',    () => this._drag = false);
+    c.addEventListener('mouseleave', () => this._drag = false);
+    c.addEventListener('wheel', e => {
+      e.preventDefault();
+      if(!this.sig) return;
+      this.zoom(e.deltaY > 0 ? 1.15 : 0.87);
+    }, {passive:false});
+  }
+  load(samples, sr) {
+    this.sig = samples; this.sr = sr;
+    this.vs  = 0;
+    this.ve  = Math.min(samples.length, Math.floor(sr * 0.5));
+    this.draw();
+  }
+  draw() {
+    const {cv:c, ctx, sig, vs, ve, color} = this;
+    const w = c.width, h = c.height, mid = h/2;
+    ctx.fillStyle = '#040414'; ctx.fillRect(0,0,w,h);
+    if(!sig) { this._empty(); return; }
+    // Grid
+    ctx.strokeStyle = '#0e0e30'; ctx.lineWidth = .5;
+    for(let i=1;i<10;i++){
+      const x=(i/10)*w; ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke();
+    }
+    [.25,.5,.75].forEach(f=>{ ctx.beginPath(); ctx.moveTo(0,f*h); ctx.lineTo(w,f*h); ctx.stroke(); });
+    ctx.strokeStyle='#16164a'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(w,mid); ctx.stroke();
+    // Waveform
+    const s0=Math.floor(Math.max(0,vs)), s1=Math.ceil(Math.min(sig.length,ve));
+    const sl=sig.subarray(s0,s1), ln=sl.length;
+    if(!ln) return;
+    const amp = mid*.87;
+    ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.beginPath();
+    if(ln<=w) {
+      const ppx=w/ln;
+      for(let i=0;i<ln;i++){const x=i*ppx,y=mid-sl[i]*amp; i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+    } else {
+      const spp=ln/w;
+      for(let px=0;px<w;px++){
+        const a=Math.floor(px*spp), b=Math.min(Math.floor((px+1)*spp),ln);
+        let mn=Infinity, mx=-Infinity;
+        for(let k=a;k<b;k++){if(sl[k]<mn)mn=sl[k];if(sl[k]>mx)mx=sl[k];}
+        const yH=mid-mx*amp, yL=mid-mn*amp;
+        px?ctx.lineTo(px,yH):ctx.moveTo(px,yH); ctx.lineTo(px,yL);
+      }
+    }
+    ctx.stroke();
+    // Time labels
+    ctx.fillStyle='#38386a'; ctx.font='10px Space Mono,monospace';
+    ctx.textAlign='left';  ctx.fillText(fmt(vs/this.sr), 5, h-5);
+    ctx.textAlign='right'; ctx.fillText(fmt(ve/this.sr), w-5, h-5);
+    // Playhead
+    if(S.isPlaying){
+      const cur=S.currentTime*this.sr;
+      if(cur>=vs&&cur<=ve){
+        const px=((cur-vs)/(ve-vs))*w;
+        ctx.strokeStyle='#ffe066'; ctx.lineWidth=2;
+        ctx.setLineDash([5,4]); ctx.beginPath(); ctx.moveTo(px,0); ctx.lineTo(px,h); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+  }
+  _empty() {
+    const {cv:c,ctx}=this; const w=c.width,h=c.height;
+    ctx.fillStyle='#040414'; ctx.fillRect(0,0,w,h);
+    ctx.fillStyle='#1e1e50'; ctx.font='13px DM Sans,sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Upload a signal to display', w/2, h/2-7);
+    ctx.fillStyle='#12123a'; ctx.font='11px DM Sans,sans-serif';
+    ctx.fillText('WAV · MP3 · OGG · FLAC · CSV', w/2, h/2+11);
+  }
+  play() {
+    if(!this.sig || S.isPlaying) return;
+    S.isPlaying = true;
+    const step = () => {
+      if(!S.isPlaying) return;
+      const win = this.ve - this.vs, adv = Math.floor((this.sr/60)*this.speed);
+      if(this.vs + win + adv >= this.sig.length) { this.stop(); return; }
+      this.vs += adv; this.ve = this.vs + win;
+      S.currentTime = this.vs / this.sr;
+      this.draw(); this._syncPartner();
+      this.anim = requestAnimationFrame(step);
+    };
+    this.anim = requestAnimationFrame(step);
+  }
+  pause() { S.isPlaying = false; cancelAnimationFrame(this.anim); }
+  stop()  {
+    S.isPlaying = false; S.currentTime = 0;
+    cancelAnimationFrame(this.anim);
+    if(this.sig){ this.vs=0; this.ve=Math.min(this.sig.length,Math.floor(this.sr*.5)); }
+    this.draw(); this._syncPartner();
+  }
+  setSpeed(s) { this.speed = Math.max(.25,Math.min(4,s)); }
+  zoom(f) {
+    if(!this.sig) return;
+    const c=(this.vs+this.ve)/2, half=Math.max(this.sr*.05,Math.min(this.sig.length/2,(this.ve-this.vs)/2*f));
+    this.vs=Math.max(0,c-half); this.ve=Math.min(this.sig.length,c+half);
+    this.draw(); this._syncPartner();
+  }
+  pan(dir) {
+    if(!this.sig) return;
+    const win=this.ve-this.vs, shift=win*.2*dir;
+    this.vs=Math.max(0,this.vs+shift); this.ve=this.vs+win;
+    if(this.ve>this.sig.length){this.ve=this.sig.length;this.vs=this.ve-win;}
+    this.draw(); this._syncPartner();
+  }
+  reset() {
+    if(!this.sig) return;
+    this.vs=0; this.ve=Math.min(this.sig.length,Math.floor(this.sr*.5));
+    this.draw(); this._syncPartner();
+  }
+  syncWith(other) { this.partner=other; other.partner=this; }
+  _syncPartner() {
+    if(!this.partner||this._syncing) return;
+    this.partner._syncing=true;
+    this.partner.vs=Math.max(0,this.vs);
+    this.partner.ve=Math.min(this.partner.sig?.length||this.ve, this.ve);
+    this.partner.draw();
+    this.partner._syncing=false;
+  }
+}
+
+/* ══════════════════════════════════════════
+   SPECTROGRAM VIEWER
+══════════════════════════════════════════ */
+class SpectrogramViewer {
+  constructor(canvasId) {
+    this.cv  = document.getElementById(canvasId);
+    this.ctx = this.cv.getContext('2d');
+    this._empty();
+  }
+  _empty() {
+    this.ctx.fillStyle='#040414';
+    this.ctx.fillRect(0,0,this.cv.width,this.cv.height);
+  }
+  draw(data) {
+    if(!data?.length||!data[0]?.length) return;
+    const {cv:c,ctx} = this; const rows=data.length, cols=data[0].length;
+    // Resize canvas to container
+    const par = c.parentElement;
+    if(par){ c.width=par.clientWidth||c.width; c.height=par.clientHeight||c.height; }
+    const w=c.width, h=c.height;
+    const img=ctx.createImageData(w,h); const px=img.data;
+    for(let ri=0;ri<rows;ri++) {
+      for(let ci=0;ci<cols;ci++) {
+        const v = data[ri][ci];
+        // Plasma-ish colormap: dark blue → cyan → yellow
+        const r = Math.max(0,Math.min(255, (v*2-.7)*340));
+        const g = Math.max(0,Math.min(255, v*v*255));
+        const b = Math.max(0,Math.min(255, (1-v)*230+15));
+        const xs=Math.floor(ci*w/cols), xe=Math.floor((ci+1)*w/cols);
+        const ys=Math.floor((rows-ri-1)*h/rows), ye=Math.floor((rows-ri)*h/rows);
+        for(let y=ys;y<ye;y++) for(let x=xs;x<xe;x++){
+          const idx=(y*w+x)*4; px[idx]=r; px[idx+1]=g; px[idx+2]=b; px[idx+3]=255;
+        }
+      }
+    }
+    ctx.putImageData(img,0,0);
+  }
+}
+
+/* ══════════════════════════════════════════
+   FREQUENCY PLOT (Chart.js)
+══════════════════════════════════════════ */
+class FreqPlot {
+  constructor(canvasId, colors=['#38b6ff','#ff3daa']) {
+    this.cv = document.getElementById(canvasId);
+    this.colors = colors; this._in=null; this._out=null; this.scale='linear';
+    this._init();
+  }
+  _init() {
+    if(this.chart) this.chart.destroy();
+    this.chart = new Chart(this.cv, {type:'line', data:{datasets:[
+      {label:'Input',  data:[], borderColor:this.colors[0], backgroundColor:'transparent',
+       pointRadius:0, borderWidth:1.5, tension:.1},
+      {label:'Output', data:[], borderColor:this.colors[1], backgroundColor:'transparent',
+       pointRadius:0, borderWidth:1.5, tension:.1},
+    ]}, options:{animation:false, responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#5a5a9a',font:{size:10},boxWidth:10}}},
+      scales:{
+        x:{type:'linear',
+          title:{display:true,text:'Frequency (Hz)',color:'#3a3a6a',font:{size:10}},
+          ticks:{color:'#3a3a6a',maxTicksLimit:8,font:{size:9}},grid:{color:'#0e0e2a'}},
+        y:{ticks:{color:'#3a3a6a',font:{size:9}},grid:{color:'#0e0e2a'}}
+      }}
+    });
+  }
+  draw(inp, out) { this._in=inp; this._out=out||inp; this._render(); }
+  setScale(s)    { this.scale=s; this._render(); }
+  _render() {
+    if(!this._in||!this.chart) return;
+    const inp=this._in, out=this._out||inp;
+    if(this.scale==='audiogram') {
+      const af=[125,250,500,1000,2000,4000,8000];
+      const near=(arr,hz) => arr.reduce((b,x)=>Math.abs(x.frequency-hz)<Math.abs(b.frequency-hz)?x:b);
+      this.chart.data.datasets[0].data = af.map(f=>({x:f,y:near(inp,f).magnitude}));
+      this.chart.data.datasets[1].data = af.map(f=>({x:f,y:near(out,f).magnitude}));
+      this.chart.options.scales.x.type='logarithmic';
+      this.chart.options.scales.x.title.text='Frequency (Hz) — Audiogram Scale';
+      this.chart.options.scales.x.min=100; this.chart.options.scales.x.max=9000;
+    } else {
+      const step=Math.max(1,Math.floor(inp.length/800));
+      this.chart.data.datasets[0].data=inp.filter((_,i)=>i%step===0).map(d=>({x:d.frequency,y:d.magnitude}));
+      this.chart.data.datasets[1].data=out.filter((_,i)=>i%step===0).map(d=>({x:d.frequency,y:d.magnitude}));
+      this.chart.options.scales.x.type='linear';
+      this.chart.options.scales.x.title.text='Frequency (Hz)';
+      delete this.chart.options.scales.x.min; delete this.chart.options.scales.x.max;
+    }
+    this.chart.update('none');
+  }
+}
+
+/* ══════════════════════════════════════════
+   WAVELET ENERGY BAR CHART
+══════════════════════════════════════════ */
+class WaveletPlot {
+  constructor(canvasId) {
+    this.cv = document.getElementById(canvasId); this.chart=null; this._init();
+  }
+  _init() {
+    if(this.chart) this.chart.destroy();
+    this.chart = new Chart(this.cv, {type:'bar', data:{labels:[], datasets:[
+      {label:'Input',  data:[], backgroundColor:'rgba(56,182,255,.35)',  borderColor:'#38b6ff', borderWidth:1.5},
+      {label:'Output', data:[], backgroundColor:'rgba(180,77,255,.35)', borderColor:'#b44dff', borderWidth:1.5},
+    ]}, options:{animation:false, responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#5a5a9a',font:{size:10},boxWidth:10}}},
+      scales:{
+        x:{ticks:{color:'#5a5a9a',font:{size:9}},grid:{color:'#0e0e2a'}},
+        y:{title:{display:true,text:'RMS Energy',color:'#3a3a6a',font:{size:10}},
+           ticks:{color:'#3a3a6a',font:{size:9}},grid:{color:'#0e0e2a'}}
+      }}
+    });
+  }
+  draw(inE, outE) {
+    if(!inE?.length) return;
+    this.chart.data.labels = inE.map(e=>e.name||e.band_id);
+    this.chart.data.datasets[0].data = inE.map(e=>e.energy);
+    this.chart.data.datasets[1].data = (outE||inE).map(e=>e.energy);
+    this.chart.update('none');
+  }
+  setLabels(names) {
+    this.chart.data.labels=names;
+    this.chart.data.datasets[0].data=names.map(()=>0);
+    this.chart.data.datasets[1].data=names.map(()=>0);
+    this.chart.update('none');
+  }
+}
+
+/* ══════════════════════════════════════════
+   AUDIO PLAYER
+══════════════════════════════════════════ */
+const AudioP = {
+  _ctx:null, _src:null, isPlaying:false,
+  _ac() { if(!this._ctx) this._ctx = new AudioContext(); return this._ctx; },
+  async play(b64) {
+    this.stop();
+    try {
+      const bin=atob(b64), bytes=new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+      const ctx=this._ac(); if(ctx.state==='suspended') await ctx.resume();
+      const buf=await ctx.decodeAudioData(bytes.buffer.slice(0));
+      this._src=ctx.createBufferSource(); this._src.buffer=buf;
+      this._src.connect(ctx.destination); this._src.start(0);
+      this.isPlaying=true;
+      this._src.onended=()=>{ this.isPlaying=false; document.getElementById('btn-audio').textContent='🔊 Audio Out'; };
+    } catch(e) { toast('Audio failed: '+e.message, 'error'); }
+  },
+  stop() { try{this._src?.stop();}catch{} this._src=null; this.isPlaying=false; },
+  setSpeed(s) { if(this._src) this._src.playbackRate.value=s; }
+};
+
+/* ══════════════════════════════════════════
+   SLIDER FACTORY
+══════════════════════════════════════════ */
+function buildSliders(containerId, sliders, gainStore, slClass, valClass, onChange) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+  if(!sliders?.length){
+    el.innerHTML = '<div style="color:var(--muted);padding:16px;font-size:12px">No bands defined for this mode.</div>';
+    return;
+  }
+  sliders.forEach(sl => {
+    gainStore[sl.id] = gainStore[sl.id] ?? 1.0;
+    const col  = document.createElement('div'); col.className='sl-col';
+    const vl   = document.createElement('div'); vl.className=`sl-val ${valClass}`; vl.textContent='1.0×';
+    const inp  = document.createElement('input');
+    inp.type='range'; inp.className=`eq-sl ${slClass}`;
+    inp.min=0; inp.max=200; inp.value=Math.round(gainStore[sl.id]*100);
+    inp.title = sl.freq_ranges.map(r=>`${r[0]}–${r[1]} Hz`).join(', ');
+    const nl   = document.createElement('div'); nl.className='sl-name'; nl.textContent=sl.name;
+    const rl   = document.createElement('div'); rl.className='sl-range';
+    rl.textContent = sl.freq_ranges.map(r=>`${r[0]}–${r[1]} Hz`).join(', ');
+    inp.addEventListener('input', () => {
+      const g = inp.value/100; vl.textContent=g.toFixed(1)+'×'; gainStore[sl.id]=g; onChange();
+    });
+    col.append(vl, inp, nl, rl); el.appendChild(col);
+  });
+}
+
+function buildGenericSliders(sliders) {
+  const el = document.getElementById('generic-eq');
+  el.innerHTML = ''; S.freqGains={};
+  if(!sliders?.length) {
+    el.innerHTML = `<div id="g-empty" style="color:var(--muted);padding:28px;font-size:13px">
+      📋 Click <b style="color:var(--orange)">Load Schema</b> to auto-generate sliders,
+      or click <b style="color:var(--orange)">＋ Add Band</b>
+    </div>`;
+  } else {
+    document.getElementById('schema-hint').textContent = sliders.length+' band'+(sliders.length>1?'s':'')+' loaded';
+    sliders.forEach(sl => {
+      S.freqGains[sl.id]=1.0;
+      const col=document.createElement('div'); col.className='sl-col';
+      const vl=document.createElement('div'); vl.className='sl-val'; vl.style.color='var(--orange)'; vl.textContent='1.0×';
+      const inp=document.createElement('input');
+      inp.type='range'; inp.className='eq-sl gen-sl';
+      inp.min=0; inp.max=200; inp.value=100;
+      inp.title=sl.freq_ranges.map(r=>`${r[0]}–${r[1]} Hz`).join(', ');
+      const nl=document.createElement('div'); nl.className='sl-name'; nl.textContent=sl.name;
+      const rl=document.createElement('div'); rl.className='sl-range';
+      rl.textContent=sl.freq_ranges.map(r=>`${r[0]}–${r[1]} Hz`).join(', ');
+      inp.addEventListener('input',()=>{const g=inp.value/100;vl.textContent=g.toFixed(1)+'×';S.freqGains[sl.id]=g;runEqualize();});
+      col.append(vl,inp,nl,rl); el.appendChild(col);
+    });
+  }
+  // Add-band button always visible
+  const addBtn = document.createElement('button');
+  addBtn.className='btn btn-orange'; addBtn.style.cssText='align-self:center;margin-left:10px;flex-shrink:0;';
+  addBtn.textContent='＋ Add Band';
+  addBtn.onclick = () => {
+    const name=prompt('Band name (e.g. "Sub-bass"):'); if(!name?.trim())return;
+    const mn=parseFloat(prompt('Min frequency (Hz):')); const mx=parseFloat(prompt('Max frequency (Hz):'));
+    if(isNaN(mn)||isNaN(mx)||mn>=mx){alert('Invalid range');return;}
+    if(!S.config){S.config={name:'Generic',sliders:[]};}
+    if(!S.config.sliders)S.config.sliders=[];
+    const nid=Math.max(0,...S.config.sliders.map(s=>s.id))+1;
+    S.config.sliders.push({id:nid,name:name.trim(),freq_ranges:[[mn,mx]]});
+    buildGenericSliders(S.config.sliders);
+    if(S.inputSid) runEqualize();
+    toast('Band "'+name.trim()+'" added ✅','success');
+  };
+  el.appendChild(addBtn);
+}
+
+/* ══════════════════════════════════════════
+   AI SLIDERS (System C)
+══════════════════════════════════════════ */
+function buildAISliders(stemNames) {
+  const el = document.getElementById('ai-eq-sliders');
+  el.innerHTML=''; S.aiGains={};
+  if(!stemNames?.length){
+    el.innerHTML='<div class="ai-empty-hint">No components detected</div>'; return;
+  }
+  stemNames.forEach(name => {
+    S.aiGains[name]=1.0;
+    const col=document.createElement('div'); col.className='sl-col';
+    const vl=document.createElement('div'); vl.className='sl-val ai-val'; vl.textContent='1.0×';
+    const inp=document.createElement('input');
+    inp.type='range'; inp.className='eq-sl ai-sl'; inp.min=0; inp.max=200; inp.value=100;
+    const nl=document.createElement('div'); nl.className='sl-name'; nl.textContent=name;
+    inp.addEventListener('input',()=>{
+      const g=inp.value/100; vl.textContent=g.toFixed(1)+'×'; S.aiGains[name]=g; runAIEqualize();
+    });
+    col.append(vl,inp,nl); el.appendChild(col);
+  });
+}
+
+/* ══════════════════════════════════════════
+   STEM VIEWERS
+══════════════════════════════════════════ */
+async function loadStemViewers(stemNames) {
+  const wrap=document.getElementById('stem-viewers');
+  const grid=document.getElementById('stem-grid');
+  const lbl =document.getElementById('stem-count-lbl');
+  wrap.style.display='block';
+  lbl.textContent = stemNames.length+' stem'+(stemNames.length>1?'s':'');
+  grid.innerHTML  = '<div style="color:var(--muted);padding:16px;font-size:12px">⏳ Loading stem data…</div>';
+
+  // Stop any playing stems
+  Object.values(S.stemAudio).forEach(src => { try{src.stop();}catch{} });
+  S.stemAudio = {};
+
+  // Fetch all stems in parallel
+  const cards = await Promise.all(stemNames.map(async name => {
+    try {
+      const d = await API.aiStemData(S.inputSid, S.mode, name);
+      return { name, data: d.error ? null : d, error: d.error };
+    } catch(e) {
+      return { name, data:null, error:e.message };
+    }
+  }));
+
+  grid.innerHTML='';
+  cards.forEach(({name, data, error}) => {
+    const card = document.createElement('div'); card.className='stem-card';
+
+    if(!data || error) {
+      card.innerHTML=`
+        <div class="stem-card-head">
+          <span class="stem-card-name">${name}</span>
+        </div>
+        <div style="color:var(--red);font-size:11px;padding:10px">⚠ ${error||'No data returned'}</div>`;
+      grid.appendChild(card); return;
+    }
+
+    const safeId = name.replace(/[^a-zA-Z0-9]/g,'_');
+    const cvId   = 'cv-sw-'+safeId;
+    const fftId  = 'cv-sf-'+safeId;
+    const btnId  = 'btn-sp-'+safeId;
+    const dur    = data.duration?.toFixed(1)||'?';
+    const rms    = data.rms_energy?.toFixed(5)||'0';
+
+    card.innerHTML=`
+      <div class="stem-card-head">
+        <span class="stem-card-name">${name}</span>
+        <span class="stem-card-info">${dur}s · RMS: ${rms}</span>
+      </div>
+      <canvas class="stem-wave" id="${cvId}" width="230" height="58"></canvas>
+      <div class="stem-fft"><canvas id="${fftId}"></canvas></div>
+      <div class="stem-btns">
+        <button class="stem-play-btn" id="${btnId}">▶ Play</button>
+      </div>`;
+    grid.appendChild(card);
+
+    // Draw waveform on next tick
+    requestAnimationFrame(() => {
+      const wc = document.getElementById(cvId);
+      if(wc && data.samples?.length) {
+        const ctx=wc.getContext('2d'), w=wc.width, h=wc.height, mid=h/2;
+        ctx.fillStyle='#040414'; ctx.fillRect(0,0,w,h);
+        const sig=data.samples, ln=sig.length, amp=mid*.85, spp=ln/w;
+        ctx.strokeStyle='#2effd7'; ctx.lineWidth=1.2; ctx.beginPath();
+        for(let px=0;px<w;px++){
+          const a=Math.floor(px*spp), b=Math.min(Math.floor((px+1)*spp),ln);
+          let mn=Infinity,mx=-Infinity;
+          for(let k=a;k<b;k++){if(sig[k]<mn)mn=sig[k];if(sig[k]>mx)mx=sig[k];}
+          const yH=mid-mx*amp, yL=mid-mn*amp;
+          px?ctx.lineTo(px,yH):ctx.moveTo(px,yH); ctx.lineTo(px,yL);
+        }
+        ctx.stroke();
+      }
+      // FFT chart
+      const fc = document.getElementById(fftId);
+      if(fc && data.fft?.length){
+        const step=Math.max(1,Math.floor(data.fft.length/200));
+        const pts=data.fft.filter((_,i)=>i%step===0).map(p=>({x:p.frequency,y:p.magnitude}));
+        new Chart(fc,{type:'line',data:{datasets:[{
+          data:pts, borderColor:'#2effd7', backgroundColor:'transparent',
+          pointRadius:0, borderWidth:1.2, tension:.1
+        }]},options:{animation:false,responsive:true,maintainAspectRatio:false,
+          plugins:{legend:{display:false}},
+          scales:{
+            x:{type:'linear',ticks:{color:'#3a3a6a',maxTicksLimit:4,font:{size:8}},grid:{color:'#0e0e2a'}},
+            y:{ticks:{color:'#3a3a6a',maxTicksLimit:3,font:{size:8}},grid:{color:'#0e0e2a'}}
+          }}});
+      }
+    });
+
+    // Audio play button
+    if(data.audio_b64){
+      const btn=document.getElementById(btnId);
+      btn?.addEventListener('click', async ()=>{
+        // Stop all others
+        Object.entries(S.stemAudio).forEach(([n,src])=>{
+          if(n!==name){ try{src.stop();}catch{}
+            const b=document.getElementById('btn-sp-'+n.replace(/[^a-zA-Z0-9]/g,'_'));
+            if(b){b.textContent='▶ Play';b.classList.remove('active');}
+          }
+        });
+        if(btn.classList.contains('active')){
+          try{S.stemAudio[name]?.stop();}catch{} delete S.stemAudio[name];
+          btn.textContent='▶ Play'; btn.classList.remove('active'); return;
+        }
+        try{
+          const bin=atob(data.audio_b64), bytes=new Uint8Array(bin.length);
+          for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+          const ac=new AudioContext(); if(ac.state==='suspended') await ac.resume();
+          const buf=await ac.decodeAudioData(bytes.buffer.slice(0));
+          const src=ac.createBufferSource(); src.buffer=buf; src.connect(ac.destination); src.start(0);
+          S.stemAudio[name]=src;
+          btn.textContent='⏹ Stop'; btn.classList.add('active');
+          src.onended=()=>{ delete S.stemAudio[name]; btn.textContent='▶ Play'; btn.classList.remove('active'); };
+        } catch(e){ toast('Audio error: '+e.message,'error'); }
+      });
+    }
+  });
+}
+
+/* ══════════════════════════════════════════
+   AI SEPARATION  (System C)
+══════════════════════════════════════════ */
+let _aiChart = null;
+
+async function runAISeparate() {
+  if(!S.inputSid){ toast('Upload a signal first','error'); return; }
+  const btn=document.getElementById('ai-sep-btn');
+  const status=document.getElementById('ai-eq-status');
+  btn.disabled=true; btn.textContent='⏳ Separating…';
+  status.textContent='Running AI separation…';
+  try {
+    const r = await API.aiStems(S.inputSid, S.mode);
+    if(r.error){ toast('Separation failed: '+r.error,'error'); status.textContent='Failed'; return; }
+    buildAISliders(r.stem_names||[]);
+    if (S.mode === 'voices')  buildVCScales(r.stem_names||[]);
+    if (S.mode === 'animals') buildACScales(r.stem_names||[]);
+    status.textContent=(r.count||r.stem_names?.length||0)+' components detected'+(r.cached?' (cached)':'');
+    toast('✅ '+r.count+' stems found','success');
+    document.getElementById('ai-eq-wrap').style.display='block';
+    // Initial AI equalize to draw chart
+    await runAIEqualize();
+    // Load per-stem viewers
+    await loadStemViewers(r.stem_names||[]);
+  } catch(e) {
+    toast('Separation error: '+e.message,'error'); status.textContent='Error';
+  } finally { btn.disabled=false; btn.textContent='⚙ Separate'; }
+}
+
+let _aiEqBusy=false;
+async function runAIEqualize() {
+  if(_aiEqBusy||!S.inputSid||!Object.keys(S.aiGains).length) return;
+  _aiEqBusy=true;
+  try {
+    const r = await API.aiEqualize(S.inputSid, S.mode, S.aiGains);
+    if(r.error){ console.warn('AI equalize:', r.error); return; }
+    // Update System C chart
+    const cv=document.getElementById('cv-ai-eq');
+    if(cv && r.fft_input && r.fft_output){
+      if(_aiChart) _aiChart.destroy();
+      const step=Math.max(1,Math.floor(r.fft_input.length/600));
+      _aiChart=new Chart(cv,{type:'line',data:{datasets:[
+        {label:'Input', data:r.fft_input.filter((_,i)=>i%step===0).map(d=>({x:d.frequency,y:d.magnitude})),
+         borderColor:'#38b6ff',backgroundColor:'transparent',pointRadius:0,borderWidth:1.5,tension:.1},
+        {label:'Output',data:r.fft_output.filter((_,i)=>i%step===0).map(d=>({x:d.frequency,y:d.magnitude})),
+         borderColor:'#2effd7',backgroundColor:'transparent',pointRadius:0,borderWidth:1.5,tension:.1},
+      ]},options:{animation:false,responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{labels:{color:'#5a5a9a',font:{size:10},boxWidth:10}}},
+        scales:{
+          x:{type:'linear',title:{display:true,text:'Frequency (Hz)',color:'#3a3a6a',font:{size:9}},
+             ticks:{color:'#3a3a6a',maxTicksLimit:8,font:{size:9}},grid:{color:'#0e0e2a'}},
+          y:{ticks:{color:'#3a3a6a',font:{size:9}},grid:{color:'#0e0e2a'}}
+        }}});
+    }
+    // Update output waveform from AI mix
+    if(r.output_signal_b64){
+      try{
+        const bin=atob(r.output_signal_b64), bytes=new Uint8Array(bin.length);
+        for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+        const tc=new OfflineAudioContext(1,1,S.sr);
+        const buf=await tc.decodeAudioData(bytes.buffer.slice(0));
+        S.outputSamples=buf.getChannelData(0);
+        outV.load(S.outputSamples, buf.sampleRate);
+      }catch{}
+    }
+  } finally { _aiEqBusy=false; }
+}
+
+/* ══════════════════════════════════════════
+   SYSTEM TOGGLE A/B
+══════════════════════════════════════════ */
+function setActiveSystem(sys) {
+  S.activeSystem = sys;
+  const pill=document.getElementById('sys-toggle-pill');
+  const hint=document.getElementById('toggle-hint');
+  const freqLbl=document.getElementById('lbl-freq');
+  const wavLbl =document.getElementById('lbl-wav');
+  const freqPanel=document.getElementById('panel-freq');
+  const wavPanel =document.getElementById('panel-wav');
+
+  if(sys==='freq'){
+    pill.classList.replace('wav-on','freq-on');
+    hint.textContent='ACTIVE: FREQUENCY';
+    freqLbl.classList.add('active');    freqLbl.classList.remove('dim');
+    wavLbl.classList.remove('active'); wavLbl.classList.add('dim');
+    freqPanel.classList.remove('dimmed'); freqPanel.classList.add('active-freq');
+    wavPanel.classList.add('dimmed');    wavPanel.classList.remove('active-wav');
+  } else {
+    pill.classList.replace('freq-on','wav-on');
+    hint.textContent='ACTIVE: WAVELET';
+    wavLbl.classList.add('active');     wavLbl.classList.remove('dim');
+    freqLbl.classList.remove('active'); freqLbl.classList.add('dim');
+    wavPanel.classList.remove('dimmed'); wavPanel.classList.add('active-wav');
+    freqPanel.classList.add('dimmed');   freqPanel.classList.remove('active-freq');
+  }
+  if(S.inputSid) runEqualize();
+}
+
+/* ══════════════════════════════════════════
+   MODE LOADING
+══════════════════════════════════════════ */
+async function loadMode(mode) {
+  S.mode=mode; S.freqGains={}; S.wavGains={}; S.aiGains={}; S.activeSystem='freq';
+  // Hide AI panels when mode changes
+  document.getElementById('ai-eq-sliders').innerHTML='<div class="ai-empty-hint">Click ⚙ Separate to detect components and generate sliders</div>';
+  document.getElementById('ai-eq-status').textContent='Separate signal to build sliders';
+  document.getElementById('stem-viewers').style.display='none';
+  document.getElementById('voices-compare-panel').style.display='none';
+  document.getElementById('animals-compare-panel').style.display='none';
+  document.getElementById('ecg-panel').style.display='none';
+  _ecgBands=null; _ecgSummary=null;
+  buildVCScales([]);
+  document.getElementById('voices-tip').style.display='none';
+
+  try {
+    const [rawSettings, info] = await Promise.all([API.loadSettings(mode), API.modeInfo(mode)]);
+    const cfg = normaliseConfig(rawSettings.error ? {sliders:[]} : rawSettings);
+    S.config   = cfg;
+    S.modeType = info.type || 'custom';
+    S.optWavelet = info.optimal_wavelet || 'db4';
+
+    document.getElementById('ai-eq-mode-lbl').textContent = cfg.name;
+
+    if(S.modeType==='generic') {
+      // ── Generic UI ─────────────────────────────────────────
+      document.getElementById('generic-layout').style.display='flex';
+      document.getElementById('custom-layout').style.display='none';
+      document.getElementById('sys-toggle-bar').style.display='none';
+      document.getElementById('generic-toolbar').style.display='flex';
+      document.getElementById('wavelet-badge').style.display='none';
+      document.getElementById('ai-eq-wrap').style.display='none';
+      document.getElementById('g-mode-name').textContent=cfg.name;
+      buildGenericSliders(cfg.sliders.length>0 ? cfg.sliders : []);
+    } else {
+      // ── Custom UI ──────────────────────────────────────────
+      document.getElementById('generic-layout').style.display='none';
+      document.getElementById('custom-layout').style.display='flex';
+      document.getElementById('sys-toggle-bar').style.display='flex';
+      document.getElementById('generic-toolbar').style.display='none';
+      document.getElementById('wavelet-badge').style.display='flex';
+      document.getElementById('ai-eq-wrap').style.display='block';
+      document.getElementById('wval-lbl').textContent=S.optWavelet;
+      document.getElementById('sys-b-wavelet-badge').textContent=S.optWavelet;
+      // Reset toggle to freq
+      setActiveSystem('freq');
+      buildSliders('freq-sliders', cfg.sliders, S.freqGains, 'freq-sl','freq-val', runEqualize);
+      buildSliders('wav-sliders',  cfg.sliders, S.wavGains,  'wav-sl', 'wav-val',  runEqualize);
+      // Pre-label wavelet chart
+      if(cfg.sliders?.length) wPlotC.setLabels(cfg.sliders.map(s=>s.name));
+      // Voices mode tip
+      if(mode==='ecg') {
+        document.getElementById('ecg-panel').style.display='block';
+      } else {
+        document.getElementById('ecg-panel').style.display='none';
+        _ecgBands=null; _ecgSummary=null;
+      }
+      if(mode==='animals') {
+        document.getElementById('animals-compare-panel').style.display='block';
+      } else {
+        document.getElementById('animals-compare-panel').style.display='none';
+  document.getElementById('ecg-panel').style.display='none';
+  _ecgBands=null; _ecgSummary=null;
+        buildACScales([]);
+      }
+      if(mode==='voices') {
+        document.getElementById('voices-tip').style.display='block';
+        document.getElementById('voices-compare-panel').style.display='block';
+      } else {
+        document.getElementById('voices-compare-panel').style.display='none';
+  document.getElementById('animals-compare-panel').style.display='none';
+  document.getElementById('ecg-panel').style.display='none';
+  _ecgBands=null; _ecgSummary=null;
+      }
+    }
+    if(S.inputSid) {
+      if(S.specIn) setTimeout(()=>{
+        if(S.modeType==='generic') iSpecG.draw(S.specIn);
+        else iSpecC.draw(S.specIn);
+      },100);
+      runEqualize();
+    }
+  } catch(e) { toast('Mode load failed: '+e.message,'error'); }
+}
+
+/* ══════════════════════════════════════════
+   FILE UPLOAD
+══════════════════════════════════════════ */
+async function handleUpload(file) {
+  setLoading(true,'Uploading "'+file.name+'"…');
+  try {
+    const r = await API.upload(file);
+    if(r.error) throw new Error(r.error);
+    S.inputSid = r.signal_id; S.sr = r.sample_rate;
+    document.getElementById('signal-info').textContent =
+      `${file.name}  ·  ${r.duration.toFixed(2)}s  ·  ${(r.sample_rate/1000).toFixed(1)} kHz`;
+
+    const isCSV = file.name.toLowerCase().endsWith('.csv') ||
+                  file.name.toLowerCase().endsWith('.txt') ||
+                  file.name.toLowerCase().endsWith('.npy') ||
+                  r.sample_rate <= 500;  // ECG sample rate
+
+    // Load waveform — always fetch from backend for CSV/ECG
+    if (!isCSV) {
+      try {
+        const ab = await file.arrayBuffer();
+        const ac = new AudioContext();
+        const buf = await ac.decodeAudioData(ab.slice(0));
+        await ac.close();
+        S.inputSamples = new Float32Array(buf.getChannelData(0));
+        inV.load(S.inputSamples, buf.sampleRate);
+      } catch {
+        // Fallback: fetch downsampled samples from backend
+        const sd = await API.getSignal(r.signal_id);
+        if(sd.samples){ S.inputSamples=new Float32Array(sd.samples); inV.load(S.inputSamples, sd.sample_rate||r.sample_rate); }
+      }
+    } else {
+      // CSV/ECG: browser cannot decode as audio — always use backend
+      const sd = await API.getSignal(r.signal_id);
+      if(sd.samples){ S.inputSamples=new Float32Array(sd.samples); inV.load(S.inputSamples, sd.sample_rate||r.sample_rate); }
+    }
+
+    // Spectrogram
+    setLoading(true,'Computing spectrogram…');
+    const sp=await API.getSpectrogram(r.signal_id);
+    if(sp.spectrogram){
+      S.specIn=sp.spectrogram;
+      if(S.modeType==='generic') iSpecG.draw(S.specIn);
+      else iSpecC.draw(S.specIn);
+    }
+
+    setLoading(true,'Equalizing…');
+    await runEqualize();
+    toast('✅ "'+file.name+'" loaded','success');
+  } catch(e) {
+    toast('❌ Upload failed: '+e.message,'error',6000);
+  } finally { setLoading(false); }
+}
+
+/* ══════════════════════════════════════════
+   EQUALIZATION  (Systems A & B)
+══════════════════════════════════════════ */
+let _eqBusy=false;
+async function runEqualize() {
+  if(_eqBusy||!S.inputSid||!S.config?.sliders) return;
+  _eqBusy=true;
+  try {
+    const fGains = S.config.sliders.map(sl=>({
+      band_id: sl.id, freq_ranges: sl.freq_ranges,
+      gain: S.freqGains[sl.id]??1.0
+    }));
+    const wGains = (S.modeType==='custom') ? S.config.sliders.map(sl=>({
+      band_id: sl.id, freq_ranges: sl.freq_ranges,
+      gain: S.wavGains[sl.id]??1.0
+    })) : [];
+
+    const r = await API.equalize(S.inputSid, fGains, wGains, S.mode);
+    if(r.error){ console.warn('Equalize:', r.error); return; }
+
+    // Output waveform
+    if(r.output_signal_b64){
+      S.outputB64=r.output_signal_b64;
+      try{
+        const bin=atob(r.output_signal_b64), bytes=new Uint8Array(bin.length);
+        for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+        // Use safe sample rate — browsers reject < 3000 Hz
+        const safeSr = Math.max(S.sr, 8000);
+        const tc=new OfflineAudioContext(1,1,safeSr);
+        const buf=await tc.decodeAudioData(bytes.buffer.slice(0));
+        S.outputSamples=buf.getChannelData(0);
+        outV.load(S.outputSamples, S.sr); // display at real sr
+      }catch(decErr){
+        // ECG/low-sr: fetch output samples from backend signal endpoint
+        try {
+          const sd = await API.getSignal(S.inputSid);
+          if(sd.samples){ S.outputSamples=new Float32Array(sd.samples); outV.load(S.outputSamples, sd.sample_rate||S.sr); }
+        } catch {}
+      }
+    }
+
+    if(S.modeType==='generic'){
+      if(r.fft_input&&r.fft_output){ S.fftIn=r.fft_input; S.fftOut=r.fft_output; fPlotG.draw(r.fft_input,r.fft_output); }
+      if(S.specIn) iSpecG.draw(S.specIn);
+      if(r.spectrogram_output){ S.specOut=r.spectrogram_output; oSpecG.draw(r.spectrogram_output); }
+    } else {
+      if(r.fft_input&&r.fft_output){ S.fftIn=r.fft_input; S.fftOut=r.fft_output; fPlotC.draw(r.fft_input,r.fft_output); }
+      if(r.wavelet_energies_input?.length) wPlotC.draw(r.wavelet_energies_input, r.wavelet_energies_output);
+      if(S.specIn) iSpecC.draw(S.specIn);
+      if(r.spectrogram_output){ S.specOut=r.spectrogram_output; oSpecC.draw(r.spectrogram_output); }
+      if(r.wavelet_used){
+        document.getElementById('sys-b-wavelet-badge').textContent=r.wavelet_used;
+        document.getElementById('wval-lbl').textContent=r.wavelet_used;
+      }
+    }
+  } finally { _eqBusy=false; }
+}
+
+/* ══════════════════════════════════════════
+   AI ANALYSIS  (Compare panel)
+══════════════════════════════════════════ */
+async function runAIAnalysis() {
+  if(!S.inputSid){ toast('Upload a signal first','error'); return; }
+  const btn=document.getElementById('ai-btn');
+  const panel=document.getElementById('ai-panel');
+  const grid=document.getElementById('ai-grid');
+  btn.disabled=true; btn.textContent='⏳ Analyzing…';
+  panel.style.display='block';
+  grid.innerHTML='<div style="color:var(--muted);padding:14px;grid-column:1/-1">Running AI analysis…</div>';
+
+  const card=(t,v,sub='') => `<div class="ai-card">
+    <div class="ai-ct">${t}</div>
+    <div class="ai-cv">${v}</div>
+    ${sub?`<div class="ai-sub">${sub}</div>`:''}
+  </div>`;
+  const divider=(t) => `<div class="ai-section-divider">${t}</div>`;
+
+  try {
+    const r=await API.runAI(S.inputSid, S.mode); let h='';
+    if(r.error&&!r.peak_frequency){ h=`<div style="color:var(--red);padding:14px;grid-column:1/-1">❌ ${r.error}</div>`; }
+    else {
+      h+=divider('📊 Signal Statistics');
+      h+=card('Peak Frequency', (r.peak_frequency||0).toFixed(1)+' Hz');
+      h+=card('RMS Energy',    (r.rms_energy||0).toFixed(6));
+      h+=card('Peak Amplitude',(r.peak_amplitude||0).toFixed(6));
+      if(r.snr_db!=null) h+=card('SNR', r.snr_db.toFixed(2)+' dB');
+
+      if(S.mode==='ecg'){
+        h+=divider('❤️ ECG Analysis');
+        h+=card('Heart Rate',    (r.heart_rate||0).toFixed(1)+' bpm');
+        h+=card('Condition',     r.condition||'—');
+        h+=card('Beats Found',   (r.peak_count||0)+'');
+        h+=card('RR Std Dev',    (r.rr_std_ms||0).toFixed(1)+' ms');
+        if(r.summary&&Object.keys(r.summary).length){
+          h+=divider('Beat Distribution');
+          Object.entries(r.summary).forEach(([cls,cnt])=>{ h+=card(cls,''+cnt,'beats'); });
+        }
+      } else if(S.mode==='animals'){
+        h+=divider('🐾 Animal Sounds');
+        if(r.top_label) h+=card('Most Likely', r.top_label);
+        if(r.sources?.length) r.sources.forEach((s,i)=>{
+          h+=card('Source '+(i+1), s.label||'?', (s.confidence*100).toFixed(1)+'% confidence');
+        });
+      } else if(S.mode==='voices'){
+        h+=divider('🗣 Voice Separation');
+        h+=card('Speakers Found', (r.speaker_count||r.speakers?.length||0)+'');
+        if(r.speakers?.length) r.speakers.forEach(s=>{
+          h+=card('Speaker '+s.speaker_id, s.duration_sec.toFixed(1)+'s');
+        });
+      } else if(S.mode==='instruments'){
+        h+=divider('🎸 Instruments');
+        if(r.stems?.length) r.stems.forEach(s=>{ h+=card('Stem', s); });
+      }
+    }
+    grid.innerHTML=h||card('Status','No data returned');
+  } catch(e) {
+    grid.innerHTML=`<div style="color:var(--red);padding:14px;grid-column:1/-1">❌ ${e.message}</div>`;
+  } finally { btn.disabled=false; btn.textContent='🤖 AI Compare'; }
+}
+
+/* ══════════════════════════════════════════
+   INSTANTIATE VIEWERS & PLOTS
+══════════════════════════════════════════ */
+const inV     = new CineViewer('cv-in',  '#38b6ff');
+const outV    = new CineViewer('cv-out', '#ff3daa');
+inV.syncWith(outV);
+
+const fPlotG  = new FreqPlot('cv-freq-g');
+const iSpecG  = new SpectrogramViewer('cv-ispec-g');
+const oSpecG  = new SpectrogramViewer('cv-ospec-g');
+
+const fPlotC  = new FreqPlot('cv-freq-c');
+const wPlotC  = new WaveletPlot('cv-wav-c');
+const iSpecC  = new SpectrogramViewer('cv-ispec-c');
+const oSpecC  = new SpectrogramViewer('cv-ospec-c');
+
+/* ══════════════════════════════════════════
+   BOOT
+══════════════════════════════════════════ */
+
+
+
+/* ══════════════════════════════════════════════════════════════
+   ECG PANEL — ResNet arrhythmia analysis + equalisation
+══════════════════════════════════════════════════════════════ */
+
+let _ecgCharts  = { input: null, output: null, wav: null };
+let _ecgAudio   = { out: null, wav: null };
+let _ecgBands   = null;   // {0:[f_lo,f_hi,f_peak], ...}
+let _ecgSummary = null;
+
+const ECG_CLASS_NAMES  = ['Normal (N)', 'SVEB (S)', 'PVC (V)', 'Fusion (F)', 'Unknown (Q)'];
+const ECG_CLASS_COLORS = ['#2effd7',    '#38b6ff',   '#ff4466',  '#ffe066',   '#b44dff'   ];
+
+// ── Build per-class gain sliders ──────────────────────────────────────────
+function buildECGSliders(summary) {
+  const row = document.getElementById('ecg-scales-row');
+  if (!row) return;
+  row.innerHTML = '';
+  const total = Object.values(summary).reduce((a,b)=>a+b, 0) || 1;
+
+  ECG_CLASS_NAMES.forEach((name, idx) => {
+    const count = summary[name] || 0;
+    const col   = document.createElement('div'); col.className = 'sl-col';
+    const vl    = document.createElement('div');
+    vl.className = 'sl-val'; vl.style.color = ECG_CLASS_COLORS[idx]; vl.textContent = '1.0×';
+    const inp   = document.createElement('input');
+    inp.type='range'; inp.className='eq-sl'; inp.style.accentColor=ECG_CLASS_COLORS[idx];
+    inp.min=0; inp.max=200; inp.value=100; inp.dataset.cls=idx;
+    inp.disabled = count === 0;
+    if (count === 0) { inp.style.opacity='0.3'; }
+    const nl = document.createElement('div'); nl.className='sl-name'; nl.textContent=name;
+    const cl = document.createElement('div');
+    cl.style.cssText='font-size:9px;color:var(--muted);text-align:center';
+    cl.textContent = count > 0 ? count + ' beats' : 'not found';
+    inp.addEventListener('input', () => { vl.textContent=(inp.value/100).toFixed(1)+'×'; });
+    col.append(vl, inp, nl, cl); row.appendChild(col);
+  });
+}
+
+// ── Read current gain values ──────────────────────────────────────────────
+function getECGGains() {
+  const gains = {};
+  document.querySelectorAll('#ecg-scales-row input[type=range]').forEach(inp => {
+    gains[inp.dataset.cls] = parseFloat(inp.value) / 100;
+  });
+  return gains;
+}
+
+// ── Run full ECG analysis ─────────────────────────────────────────────────
+async function runECGAnalyse() {
+  if (!S.inputSid) { toast('Load an ECG signal first', 'error'); return; }
+  const btn    = document.getElementById('ecg-analyse-btn');
+  const status = document.getElementById('ecg-status');
+  btn.disabled = true; btn.textContent = '⏳ Analysing…';
+  status.textContent = 'Running ECGResNet beat classification…';
+
+  try {
+    const r = await API._f('/ecg/analyse', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ signal_id: S.inputSid })
+    });
+
+    if (r.error) { toast('ECG analysis failed: ' + r.error, 'error'); status.textContent='Error'; return; }
+
+    _ecgBands   = r.bands;
+    _ecgSummary = r.summary;
+
+    // Heart rate display
+    document.getElementById('ecg-hr-val').textContent     = (r.heart_rate || 0).toFixed(0);
+    document.getElementById('ecg-rr-val').textContent     = (r.rr_std_ms  || 0).toFixed(1);
+    document.getElementById('ecg-total-beats').textContent = r.total_beats || 0;
+    const dominant = Object.entries(r.summary||{}).sort((a,b)=>b[1]-a[1])[0];
+    document.getElementById('ecg-dominant').textContent = dominant ? dominant[0] : '—';
+
+    // Beat summary cards
+    const brow = document.getElementById('ecg-beats-row');
+    if (brow) {
+      const total = Object.values(r.summary||{}).reduce((a,b)=>a+b,0)||1;
+      brow.innerHTML = ECG_CLASS_NAMES.map((name,i)=>{
+        const cnt = r.summary[name]||0;
+        const pct = (cnt/total*100).toFixed(1);
+        return `<div class="ecg-beat-card">
+          <div class="ecg-beat-class">${name}</div>
+          <div class="ecg-beat-count" style="color:${ECG_CLASS_COLORS[i]}">${cnt}</div>
+          <div class="ecg-beat-pct">${pct}%</div>
+        </div>`;
+      }).join('');
+    }
+    document.getElementById('ecg-summary-wrap').style.display='flex';
+
+    // Build gain sliders
+    buildECGSliders(r.summary||{});
+
+    // Enable equalise + compare buttons
+    document.getElementById('ecg-eq-btn').disabled      = false;
+    document.getElementById('ecg-compare-btn').disabled = false;
+
+    status.textContent = `Done — ${r.total_beats} beats classified`;
+    toast('✅ ECG analysis complete', 'success');
+
+  } catch(e) { toast('ECG error: '+e.message,'error'); status.textContent='Error'; }
+  finally { btn.disabled=false; btn.textContent='🔬 Analyse'; }
+}
+
+// ── Run ECG equalisation (System C) ──────────────────────────────────────
+async function runECGEqualise() {
+  if (!S.inputSid || !_ecgBands) { toast('Run Analyse first', 'error'); return; }
+  const btn    = document.getElementById('ecg-eq-btn');
+  const status = document.getElementById('ecg-status');
+  btn.disabled = true; btn.textContent = '⏳ Equalising…';
+
+  try {
+    const gains    = getECGGains();
+    const noiseGain = parseFloat(document.getElementById('ecg-noise-sel').value||'1.0');
+
+    const r = await API._f('/ecg/equalize', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ signal_id:S.inputSid, gains, noise_gain:noiseGain })
+    });
+
+    if (r.error) { toast('Equalise failed: '+r.error,'error'); return; }
+
+    // Update System A output waveform
+    if (r.output_signal_b64) {
+      S.outputB64 = r.output_signal_b64;
+      try {
+        const bin=atob(r.output_signal_b64); const bytes=new Uint8Array(bin.length);
+        for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+        const tc=new OfflineAudioContext(1,1,S.sr);
+        const buf=await tc.decodeAudioData(bytes.buffer.slice(0));
+        S.outputSamples=buf.getChannelData(0); outV.load(S.outputSamples,buf.sampleRate);
+      } catch{}
+    }
+
+    // Update main FFT charts
+    if (r.fft_input && r.fft_output) fPlotC.draw(r.fft_input, r.fft_output);
+    if (r.spectrogram_output) oSpecC.draw(r.spectrogram_output);
+
+    // Show ECG freq charts
+    const fw = document.getElementById('ecg-freq-wrap');
+    if (fw) {
+      fw.style.display='block';
+      Object.values(_ecgCharts).forEach(c=>{try{c?.destroy();}catch{}});
+      _ecgCharts.input  = _vcMakeFreqChart('cv-ecg-in',  r.fft_input,  '#38b6ff','Input');
+      _ecgCharts.output = _vcMakeFreqChart('cv-ecg-out', r.fft_output, '#ff4466','ResNet EQ');
+    }
+
+    // Audio
+    const ar=document.getElementById('ecg-audio-row'); if(ar) ar.style.display='flex';
+    document.getElementById('ecg-play-out-btn')._b64 = r.output_signal_b64;
+
+    status.textContent='Equalisation done';
+    toast('✅ ECG equalised','success');
+  } catch(e){ toast('Equalise error: '+e.message,'error'); }
+  finally { btn.disabled=false; btn.textContent='▶ Equalise'; }
+}
+
+// ── ECG comparison: wavelet vs ResNet ────────────────────────────────────
+async function runECGCompare() {
+  if (!S.inputSid) { toast('Load and analyse an ECG first','error'); return; }
+  const btn    = document.getElementById('ecg-compare-btn');
+  const status = document.getElementById('ecg-status');
+  btn.disabled=true; btn.textContent='⏳ Comparing…';
+  status.textContent='Running wavelet vs ResNet comparison…';
+
+  // Stop any playing ECG audio
+  ['out','wav'].forEach(k=>{try{_ecgAudio[k]?.stop();}catch{} _ecgAudio[k]=null;});
+
+  try {
+    const gains     = getECGGains();
+    const noiseGain = parseFloat(document.getElementById('ecg-noise-sel').value||'1.0');
+
+    const r = await API._f('/ecg/compare', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ signal_id:S.inputSid, gains, wavelet:'db4', level:6, noise_gain:noiseGain })
+    });
+
+    if (r.error) { toast('Compare failed: '+r.error,'error'); status.textContent='Error'; return; }
+
+    const wav    = r.wavelet || {};
+    const resnet = r.resnet  || {};
+
+    // Metrics table
+    const body = document.getElementById('ecg-compare-body');
+    const wrap = document.getElementById('ecg-compare-wrap');
+    if (body && wrap) {
+      wrap.style.display='block';
+      const METRICS=[
+        {key:'snr',    label:'SNR',    unit:'dB ↑',higher:true },
+        {key:'si_snr', label:'SI-SNR', unit:'dB ↑',higher:true },
+        {key:'prd',    label:'PRD',    unit:'% ↓', higher:false},
+        {key:'lsd',    label:'LSD',    unit:'dB ↓',higher:false},
+        {key:'time_ms',label:'Time',   unit:'ms ↓',higher:false},
+      ];
+      let ww=0,aw=0;
+      const rows = METRICS.map(({key,label,unit,higher})=>{
+        const wv=wav[key]; const av=resnet[key];
+        let win='<td class="vc-metric-name">—</td>',wc='style="color:var(--text)"',ac='style="color:var(--text)"';
+        if(wv!=null&&av!=null&&!resnet.error){
+          if(higher?wv>=av:wv<=av){ww++;win='<td class="vc-winner-wav">Wavelet ✓</td>';wc='style="color:var(--green)"';}
+          else{aw++;win='<td class="vc-winner-ai" style="color:var(--red)">ResNet ✓</td>';ac='style="color:var(--red)"';}
+        }
+        return `<tr><td class="vc-metric-name">${label} (${unit})</td>
+          <td ${wc}>${wv!=null?wv.toFixed(3):'N/A'}</td>
+          <td ${ac}>${av!=null&&!resnet.error?av.toFixed(3):(resnet.error?'Error':'N/A')}</td>
+          ${win}</tr>`;
+      }).join('');
+      const oc=ww>=aw?'var(--green)':'var(--red)';
+      body.innerHTML=rows+`<tr style="background:rgba(255,255,255,.03)">
+        <td class="vc-metric-name" style="color:${oc};font-weight:800">OVERALL</td>
+        <td style="color:var(--green)">${ww} wins</td>
+        <td style="color:var(--red)">${aw} wins</td>
+        <td style="color:${oc};font-weight:800">${ww>=aw?'Wavelet':'ResNet'} wins ${Math.max(ww,aw)}/5</td>
+      </tr>`;
+    }
+
+    // Update all 3 charts
+    const fw=document.getElementById('ecg-freq-wrap'); if(fw) fw.style.display='block';
+    Object.values(_ecgCharts).forEach(c=>{try{c?.destroy();}catch{}});
+    _ecgCharts.input  = _vcMakeFreqChart('cv-ecg-in',  S.fftIn,             '#38b6ff','Input');
+    _ecgCharts.output = _vcMakeFreqChart('cv-ecg-out', resnet.fft_output,   '#ff4466','ResNet EQ');
+    _ecgCharts.wav    = _vcMakeFreqChart('cv-ecg-wav', wav.fft_output,      '#2effd7','Wavelet EQ');
+
+    // Audio buttons
+    const ar=document.getElementById('ecg-audio-row'); if(ar) ar.style.display='flex';
+    document.getElementById('ecg-play-out-btn')._b64 = resnet.output_signal_b64;
+    document.getElementById('ecg-play-wav-btn')._b64 = wav.output_signal_b64;
+
+    status.textContent=`Done — Wavelet:${wav.time_ms}ms  ResNet:${resnet.time_ms}ms`;
+    toast('✅ ECG comparison complete','success');
+  } catch(e){ toast('Compare error: '+e.message,'error'); status.textContent='Error'; }
+  finally { btn.disabled=false; btn.textContent='📊 Compare Wavelet vs ResNet'; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ANIMALS COMPARE — YAMNet vs Wavelet
+══════════════════════════════════════════════════════════════ */
+
+let _acCharts = { input: null, wav: null, ai: null };
+let _acAudio  = { wav: null, ai: null };
+
+function buildACScales(stemNames) {
+  const row = document.getElementById('ac-scales-row');
+  if (!row) return;
+  row.innerHTML = '';
+  if (!stemNames || !stemNames.length) {
+    row.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:10px">Run ⚙ Separate to detect animal groups.</div>';
+    return;
+  }
+  stemNames.forEach((name, idx) => {
+    const col = document.createElement('div'); col.className = 'sl-col';
+    const vl  = document.createElement('div');
+    vl.className = 'sl-val'; vl.style.color = 'var(--orange)'; vl.textContent = '1.0×';
+    const inp = document.createElement('input');
+    inp.type = 'range'; inp.className = 'eq-sl'; inp.style.accentColor = 'var(--orange)';
+    inp.min = 0; inp.max = 200; inp.value = 100; inp.dataset.idx = idx;
+    const nl  = document.createElement('div'); nl.className = 'sl-name'; nl.textContent = name;
+    inp.addEventListener('input', () => { vl.textContent = (inp.value / 100).toFixed(1) + '×'; });
+    col.append(vl, inp, nl); row.appendChild(col);
+  });
+}
+
+function getACScales() {
+  const inputs = document.querySelectorAll('#ac-scales-row input[type=range]');
+  if (!inputs.length) return [1.0, 1.0, 1.0, 1.0];
+  return Array.from(inputs).map(i => parseFloat(i.value) / 100);
+}
+
+function showACMetrics(wav, ai) {
+  const body = document.getElementById('ac-metrics-body');
+  const wrap = document.getElementById('ac-metrics-wrap');
+  if (!body || !wrap) return;
+  wrap.style.display = 'block';
+
+  const METRICS = [
+    { key: 'snr',     label: 'SNR',    unit: 'dB ↑',  higher: true  },
+    { key: 'si_snr',  label: 'SI-SNR', unit: 'dB ↑',  higher: true  },
+    { key: 'prd',     label: 'PRD',    unit: '% ↓',   higher: false },
+    { key: 'lsd',     label: 'LSD',    unit: 'dB ↓',  higher: false },
+    { key: 'time_ms', label: 'Time',   unit: 'ms ↓',  higher: false },
+  ];
+
+  let wavWins = 0, aiWins = 0;
+  const rows = METRICS.map(({ key, label, unit, higher }) => {
+    const wv = wav[key]; const av = ai[key];
+    let winnerTd = '<td class="vc-metric-name">—</td>';
+    let wClass = 'style="color:var(--text)"', aClass = 'style="color:var(--text)"';
+    if (wv != null && av != null && !ai.error) {
+      const wavWins_here = higher ? wv >= av : wv <= av;
+      if (wavWins_here) { wavWins++; winnerTd = '<td class="vc-winner-wav">Wavelet ✓</td>'; wClass = 'style="color:var(--green)"'; }
+      else              { aiWins++;  winnerTd = '<td class="vc-winner-ai" style="color:var(--orange)">YAMNet ✓</td>'; aClass = 'style="color:var(--orange)"'; }
+    }
+    const wvTxt = wv != null ? wv.toFixed(3) : 'N/A';
+    const avTxt = av != null && !ai.error ? av.toFixed(3) : (ai.error ? 'Error' : 'N/A');
+    return `<tr><td class="vc-metric-name">${label} (${unit})</td><td ${wClass}>${wvTxt}</td><td ${aClass}>${avTxt}</td>${winnerTd}</tr>`;
+  }).join('');
+
+  const oc = wavWins >= aiWins ? 'var(--green)' : 'var(--orange)';
+  const ow = wavWins >= aiWins ? 'Wavelet' : 'YAMNet';
+  const summary = `<tr style="background:rgba(255,255,255,.03)">
+    <td class="vc-metric-name" style="color:${oc};font-weight:800">OVERALL</td>
+    <td style="color:var(--green)">${wavWins} wins</td>
+    <td style="color:var(--orange)">${aiWins} wins</td>
+    <td style="color:${oc};font-weight:800">${ow} wins ${Math.max(wavWins,aiWins)}/5</td>
+  </tr>`;
+  body.innerHTML = rows + summary;
+}
+
+async function runAnimalsCompare() {
+  if (!S.inputSid) { toast('Upload a signal first', 'error'); return; }
+
+  const btn    = document.getElementById('ac-run-btn');
+  const status = document.getElementById('ac-status');
+  btn.disabled = true; btn.textContent = '⏳ Running…';
+  status.textContent = 'Running YAMNet + Wavelet comparison…';
+
+  ['wav','ai'].forEach(k => { try { _acAudio[k]?.stop(); } catch {} _acAudio[k] = null; });
+
+  try {
+    const scales  = getACScales();
+    const wavelet = document.getElementById('ac-wavelet-sel')?.value || 'db4';
+    const level   = parseInt(document.getElementById('ac-level-sel')?.value || '6');
+
+    const r = await API._f('/animals/compare', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ signal_id: S.inputSid, scales, wavelet, level })
+    });
+
+    if (r.error) { toast('Compare failed: ' + r.error, 'error'); status.textContent = 'Error: ' + r.error; return; }
+
+    const wav = r.wavelet || {};
+    const ai  = r.yamnet  || {};
+
+    // Backend badge
+    const badge = document.getElementById('ac-backend-badge');
+    if (badge) {
+      const be = ai.backend || 'unknown';
+      badge.textContent = be === 'yamnet' ? 'YAMNet' : be === 'cnn' ? 'CNN Fallback' : 'Fallback';
+      badge.className   = be === 'yamnet' ? 'badge-yamnet' : be === 'cnn' ? 'badge-cnn' : 'badge-fallback';
+    }
+
+    // Metrics
+    showACMetrics(wav, ai);
+
+    // Charts
+    const chartsRow = document.getElementById('ac-charts-row');
+    if (chartsRow) {
+      chartsRow.style.display = 'grid';
+      Object.values(_acCharts).forEach(c => { try { c?.destroy(); } catch {} });
+      _acCharts.input = _vcMakeFreqChart('cv-ac-in',  S.fftIn,           '#38b6ff', 'Input');
+      _acCharts.wav   = _vcMakeFreqChart('cv-ac-wav', wav.fft_output,    '#2effd7', 'Wavelet');
+      _acCharts.ai    = _vcMakeFreqChart('cv-ac-ai',  ai.fft_output,     '#ff8a00', 'YAMNet');
+    }
+
+    // Audio buttons
+    const audioRow = document.getElementById('ac-audio-row');
+    if (audioRow) audioRow.style.display = 'flex';
+    document.getElementById('ac-play-wav-btn')._b64 = wav.output_signal_b64;
+    document.getElementById('ac-play-ai-btn')._b64  = ai.output_signal_b64;
+
+    const elapsed = `Wavelet: ${wav.time_ms}ms · YAMNet: ${ai.time_ms}ms`;
+    status.textContent = ai.error ? `Done (YAMNet error: ${ai.error})` : `Done — ${elapsed}`;
+    toast('✅ Animal comparison complete', 'success');
+
+  } catch (e) {
+    toast('Compare error: ' + e.message, 'error'); status.textContent = 'Error';
+  } finally { btn.disabled = false; btn.textContent = '▶ Run Comparison'; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   VOICES COMPARE — SepFormer vs Wavelet
+   • buildVCScales(stemNames)  — build per-speaker scale sliders
+   • runVoicesCompare()        — call /api/voices/compare
+   • showVCResults(r)          — render metrics table + charts
+══════════════════════════════════════════════════════════════ */
+
+/* Chart instances for compare panel (destroyed & recreated on each run) */
+let _vcCharts = { input: null, wav: null, ai: null };
+/* Audio sources for the two compare outputs */
+let _vcAudio  = { wav: null, ai: null };
+
+// ── Build per-speaker scale sliders from stem names ────────────────────────
+function buildVCScales(stemNames) {
+  const row = document.getElementById('vc-scales-row');
+  if (!row) return;
+  row.innerHTML = '';
+
+  if (!stemNames || !stemNames.length) {
+    row.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:10px">Run ⚙ Separate first to generate speaker sliders.</div>';
+    return;
+  }
+
+  stemNames.forEach((name, idx) => {
+    const col  = document.createElement('div'); col.className = 'sl-col';
+    const vl   = document.createElement('div');
+    vl.className = 'sl-val'; vl.style.color = 'var(--purple)'; vl.textContent = '1.0×';
+    const inp  = document.createElement('input');
+    inp.type = 'range'; inp.className = 'eq-sl'; inp.style.accentColor = 'var(--purple)';
+    inp.min = 0; inp.max = 200; inp.value = 100; inp.dataset.idx = idx;
+    const nl   = document.createElement('div'); nl.className = 'sl-name'; nl.textContent = name;
+    inp.addEventListener('input', () => {
+      vl.textContent = (inp.value / 100).toFixed(1) + '×';
+    });
+    col.append(vl, inp, nl);
+    row.appendChild(col);
+  });
+}
+
+// ── Read current scale values from vc-scales-row sliders ──────────────────
+function getVCScales() {
+  const inputs = document.querySelectorAll('#vc-scales-row input[type=range]');
+  if (!inputs.length) return [1.0, 1.0];
+  return Array.from(inputs).map(i => parseFloat(i.value) / 100);
+}
+
+// ── Destroy and recreate a chart in a canvas ──────────────────────────────
+function _vcMakeFreqChart(canvasId, fftData, color, label) {
+  const cv = document.getElementById(canvasId);
+  if (!cv || !fftData?.length) return null;
+  const step = Math.max(1, Math.floor(fftData.length / 500));
+  const pts  = fftData.filter((_, i) => i % step === 0)
+                       .map(d => ({ x: d.frequency, y: d.magnitude }));
+  return new Chart(cv, {
+    type: 'line',
+    data: { datasets: [{
+      label, data: pts, borderColor: color,
+      backgroundColor: 'transparent', pointRadius: 0, borderWidth: 1.5, tension: 0.1
+    }]},
+    options: {
+      animation: false, responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#5a5a9a', font: { size: 10 }, boxWidth: 10 } } },
+      scales: {
+        x: { type: 'linear', ticks: { color: '#3a3a6a', maxTicksLimit: 5, font: { size: 9 } }, grid: { color: '#0e0e2a' } },
+        y: { ticks: { color: '#3a3a6a', font: { size: 9 } }, grid: { color: '#0e0e2a' } }
+      }
+    }
+  });
+}
+
+// ── Render metrics table ───────────────────────────────────────────────────
+function showVCMetrics(wav, ai) {
+  const body  = document.getElementById('vc-metrics-body');
+  const wrap  = document.getElementById('vc-metrics-wrap');
+  if (!body || !wrap) return;
+  wrap.style.display = 'block';
+
+  const METRICS = [
+    { key: 'snr',    label: 'SNR',    unit: 'dB ↑',  higher: true },
+    { key: 'si_snr', label: 'SI-SNR', unit: 'dB ↑',  higher: true },
+    { key: 'prd',    label: 'PRD',    unit: '% ↓',   higher: false },
+    { key: 'lsd',    label: 'LSD',    unit: 'dB ↓',  higher: false },
+    { key: 'time_ms',label: 'Time',   unit: 'ms ↓',  higher: false },
+  ];
+
+  let wavWins = 0, aiWins = 0;
+
+  const rows = METRICS.map(({ key, label, unit, higher }) => {
+    const wv = wav[key]; const av = ai[key];
+    let winnerTd = '<td class="vc-metric-name">—</td>';
+    let wClass   = 'style="color:var(--text)"';
+    let aClass   = 'style="color:var(--text)"';
+
+    if (wv != null && av != null && !ai.error) {
+      const wavWins_here = higher ? wv >= av : wv <= av;
+      if (wavWins_here) {
+        wavWins++;
+        winnerTd = '<td class="vc-winner-wav">Wavelet ✓</td>';
+        wClass   = 'style="color:var(--green)"';
+      } else {
+        aiWins++;
+        winnerTd = '<td class="vc-winner-ai">AI ✓</td>';
+        aClass   = 'style="color:var(--purple)"';
+      }
+    }
+
+    const wvTxt = wv != null ? wv.toFixed(3) : 'N/A';
+    const avTxt = av != null && !ai.error ? av.toFixed(3) : (ai.error ? 'Error' : 'N/A');
+
+    return `<tr>
+      <td class="vc-metric-name">${label} (${unit})</td>
+      <td ${wClass}>${wvTxt}</td>
+      <td ${aClass}>${avTxt}</td>
+      ${winnerTd}
+    </tr>`;
+  }).join('');
+
+  const overallColor = wavWins >= aiWins ? 'var(--green)' : 'var(--purple)';
+  const overallWinner = wavWins >= aiWins ? 'Wavelet' : 'AI (SepFormer)';
+  const summary = `<tr style="background:rgba(255,255,255,.03)">
+    <td class="vc-metric-name" style="color:${overallColor};font-weight:800">OVERALL</td>
+    <td style="color:var(--green)">${wavWins} wins</td>
+    <td style="color:var(--purple)">${aiWins} wins</td>
+    <td style="color:${overallColor};font-weight:800">${overallWinner} wins ${Math.max(wavWins,aiWins)}/5</td>
+  </tr>`;
+
+  body.innerHTML = rows + summary;
+}
+
+// ── Play base64 WAV, return AudioBufferSourceNode ─────────────────────────
+async function _vcPlayB64(b64, btnId) {
+  const btn = document.getElementById(btnId);
+  try {
+    const bin = atob(b64); const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const ac = new AudioContext(); if (ac.state === 'suspended') await ac.resume();
+    const buf = await ac.decodeAudioData(bytes.buffer.slice(0));
+    const src = ac.createBufferSource(); src.buffer = buf; src.connect(ac.destination); src.start(0);
+    if (btn) { btn.textContent = btn.textContent.replace('🔊','⏹'); }
+    src.onended = () => { if (btn) btn.textContent = btn.textContent.replace('⏹','🔊'); };
+    return src;
+  } catch (e) { toast('Audio error: ' + e.message, 'error'); return null; }
+}
+
+// ── Main compare runner ────────────────────────────────────────────────────
+async function runVoicesCompare() {
+  if (!S.inputSid) { toast('Upload a signal first', 'error'); return; }
+
+  const btn    = document.getElementById('vc-run-btn');
+  const status = document.getElementById('vc-status');
+  btn.disabled = true; btn.textContent = '⏳ Running…';
+  status.textContent = 'Running SepFormer + Wavelet comparison…';
+
+  // Stop any playing compare audio
+  ['wav','ai'].forEach(k => { try { _vcAudio[k]?.stop(); } catch {} _vcAudio[k] = null; });
+
+  try {
+    const scales  = getVCScales();
+    const wavelet = document.getElementById('vc-wavelet-sel')?.value || 'coif3';
+    const level   = parseInt(document.getElementById('vc-level-sel')?.value || '6');
+
+    const r = await API._f('/voices/compare', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ signal_id: S.inputSid, scales, wavelet, level })
+    });
+
+    if (r.error) { toast('Compare failed: ' + r.error, 'error'); status.textContent = 'Error: ' + r.error; return; }
+
+    const wav = r.wavelet || {};
+    const ai  = r.ai      || {};
+
+    // ── Update backend badge ──────────────────────────────
+    const badge = document.getElementById('vc-backend-badge');
+    if (badge) {
+      const be = ai.backend || 'unknown';
+      badge.textContent  = be === 'sepformer'  ? 'SepFormer'
+                         : be === 'convtasnet' ? 'ConvTasNet'
+                         : 'Fallback';
+      badge.className    = be === 'sepformer'  ? 'badge-sepformer'
+                         : be === 'convtasnet' ? 'badge-convtasnet'
+                         : 'badge-fallback';
+    }
+
+    // ── Metrics table ─────────────────────────────────────
+    showVCMetrics(wav, ai);
+
+    // ── Charts ────────────────────────────────────────────
+    const chartsRow = document.getElementById('vc-charts-row');
+    if (chartsRow) {
+      chartsRow.style.display = 'grid';
+      // Destroy old charts
+      Object.values(_vcCharts).forEach(c => { try { c?.destroy(); } catch {} });
+      _vcCharts.input = _vcMakeFreqChart('cv-vc-in',  S.fftIn,             '#38b6ff', 'Input');
+      _vcCharts.wav   = _vcMakeFreqChart('cv-vc-wav', wav.fft_output,      '#2effd7', 'Wavelet');
+      _vcCharts.ai    = _vcMakeFreqChart('cv-vc-ai',  ai.fft_output,       '#b44dff', 'AI (SepFormer)');
+    }
+
+    // ── Audio buttons ─────────────────────────────────────
+    const audioRow = document.getElementById('vc-audio-row');
+    if (audioRow) audioRow.style.display = 'flex';
+
+    // Store b64 for play buttons
+    document.getElementById('vc-play-wav-btn')._b64 = wav.output_signal_b64;
+    document.getElementById('vc-play-ai-btn')._b64  = ai.output_signal_b64;
+
+    const elapsed = `Wavelet: ${wav.time_ms}ms · AI: ${ai.time_ms}ms`;
+    status.textContent = ai.error ? `Done (AI error: ${ai.error})` : `Done — ${elapsed}`;
+    toast('✅ Comparison complete', 'success');
+
+  } catch (e) {
+    toast('Compare error: ' + e.message, 'error');
+    status.textContent = 'Error';
+  } finally {
+    btn.disabled = false; btn.textContent = '▶ Run Comparison';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+
+  /* ── Backend status ──────────────────── */
+  const bDot=document.getElementById('backend-dot');
+  const bTxt=document.getElementById('backend-txt');
+  try {
+    const r=await API.ping();
+    if(r.message){ bDot.style.background='var(--green)'; bTxt.textContent='Backend Online'; bTxt.style.color='var(--green)'; }
+    else throw 0;
+  } catch {
+    bDot.style.background='var(--red)'; bTxt.textContent='Backend Offline';
+    bTxt.style.color='var(--red)';
+    toast('⚠️ Backend not running! Run: uvicorn main:app --reload','error',10000);
+  }
+
+  /* ── Load default mode ───────────────── */
+  await loadMode('instruments');
+
+  /* ── Mode select ─────────────────────── */
+  document.getElementById('mode-sel').addEventListener('change', e => loadMode(e.target.value));
+
+  /* ── File: signal ────────────────────── */
+  document.getElementById('file-signal').addEventListener('change', e => {
+    const f=e.target.files[0]; if(f) handleUpload(f); e.target.value='';
+  });
+
+  /* ── File: schema (generic) ──────────── */
+  document.getElementById('file-schema').addEventListener('change', async e => {
+    const f=e.target.files[0]; if(!f)return;
+    try {
+      const raw=await readJSON(f); const cfg=normaliseConfig(raw);
+      S.config=cfg; buildGenericSliders(cfg.sliders);
+      toast('Schema: '+cfg.name+' ('+cfg.sliders.length+' bands)','success');
+      if(S.inputSid) runEqualize();
+    } catch(err){ toast('Schema error: '+err.message,'error'); }
+    e.target.value='';
+  });
+
+  /* ── Save schema ─────────────────────── */
+  document.getElementById('save-schema-btn').addEventListener('click', () => {
+    if(!S.config?.sliders?.length){ toast('No schema to save','error'); return; }
+    dlJSON(denormaliseConfig(S.config), S.mode+'_schema.json');
+    toast('Schema saved ✅','success');
+  });
+
+  /* ── Save / load config ──────────────── */
+  document.getElementById('save-cfg-btn').addEventListener('click', () => {
+    if(!S.config){ toast('No config to save','error'); return; }
+    dlJSON(denormaliseConfig(S.config), S.mode+'.json');
+    toast('Config saved ✅','success');
+  });
+  document.getElementById('load-cfg-btn').addEventListener('click', () => document.getElementById('file-config').click());
+  document.getElementById('file-config').addEventListener('change', async e => {
+    const f=e.target.files[0]; if(!f)return;
+    try {
+      const raw=await readJSON(f); const cfg=normaliseConfig(raw);
+      S.config=cfg; S.freqGains={}; S.wavGains={};
+      if(S.modeType==='generic'){
+        buildGenericSliders(cfg.sliders);
+      } else {
+        buildSliders('freq-sliders',cfg.sliders,S.freqGains,'freq-sl','freq-val',runEqualize);
+        buildSliders('wav-sliders', cfg.sliders,S.wavGains, 'wav-sl', 'wav-val', runEqualize);
+        if(cfg.sliders?.length) wPlotC.setLabels(cfg.sliders.map(s=>s.name));
+      }
+      toast('Config loaded: '+cfg.name,'success');
+      if(S.inputSid) runEqualize();
+    } catch(err){ toast('Load failed: '+err.message,'error'); }
+    e.target.value='';
+  });
+
+  /* ── FFT scale ───────────────────────── */
+  document.querySelectorAll('input[name="fscale"]').forEach(r => r.addEventListener('change', e => {
+    S.fftScale=e.target.value; fPlotG.setScale(e.target.value); fPlotC.setScale(e.target.value);
+  }));
+
+  /* ── Playback buttons ────────────────── */
+  document.getElementById('btn-play').addEventListener('click',  ()=>{ inV.play(); outV.play(); });
+  document.getElementById('btn-pause').addEventListener('click', ()=>{ inV.pause(); outV.pause(); });
+  document.getElementById('btn-stop').addEventListener('click',  ()=>{
+    inV.stop(); outV.stop(); AudioP.stop();
+    document.getElementById('btn-audio').textContent='🔊 Audio Out';
+  });
+  document.getElementById('btn-audio').addEventListener('click', async ()=>{
+    const btn=document.getElementById('btn-audio');
+    if(AudioP.isPlaying){ AudioP.stop(); btn.textContent='🔊 Audio Out'; return; }
+    if(!S.outputB64){ toast('Equalize a signal first','error'); return; }
+    btn.textContent='⏹ Stop Audio'; await AudioP.play(S.outputB64);
+  });
+
+  /* ── Speed ───────────────────────────── */
+  document.getElementById('speed-r').addEventListener('input', e=>{
+    const s=e.target.value/100;
+    document.getElementById('speed-lbl').textContent=s.toFixed(2)+'×';
+    inV.setSpeed(s); outV.setSpeed(s); AudioP.setSpeed(s);
+  });
+
+  /* ── Zoom/pan/reset ──────────────────── */
+  document.getElementById('btn-zi').addEventListener('click',  ()=>inV.zoom(.5));
+  document.getElementById('btn-zo').addEventListener('click',  ()=>inV.zoom(2));
+  document.getElementById('btn-pl').addEventListener('click',  ()=>inV.pan(-1));
+  document.getElementById('btn-pr').addEventListener('click',  ()=>inV.pan(1));
+  document.getElementById('btn-rst').addEventListener('click', ()=>{ inV.reset(); outV.reset(); });
+
+  /* ── Toggle spectrograms ─────────────── */
+  let specVisible=true;
+  document.getElementById('btn-spec-tog').addEventListener('click', ()=>{
+    specVisible=!specVisible;
+    const sc=document.getElementById('spec-col'); if(sc) sc.style.display=specVisible?'':'none';
+    document.getElementById('dual-row').style.gridTemplateColumns=specVisible?'1fr 1fr 290px':'1fr 1fr';
+    const ga=document.getElementById('generic-analysis');
+    if(ga){ ga.style.gridTemplateColumns=specVisible?'1fr 270px 270px':'1fr';
+      ga.querySelectorAll('.panel').forEach((p,i)=>{if(i>0)p.style.display=specVisible?'':'none';}); }
+  });
+
+  /* ── System toggle ───────────────────── */
+  document.getElementById('sys-toggle-pill').addEventListener('click', ()=>setActiveSystem(S.activeSystem==='freq'?'wav':'freq'));
+  document.getElementById('lbl-freq').addEventListener('click', ()=>setActiveSystem('freq'));
+  document.getElementById('lbl-wav').addEventListener('click',  ()=>setActiveSystem('wav'));
+
+  /* ── AI buttons ──────────────────────── */
+  document.getElementById('ai-btn').addEventListener('click',     runAIAnalysis);
+  document.getElementById('ai-sep-btn').addEventListener('click', runAISeparate);
+
+
+
+
+  /* ── ECG Panel ───────────────────────── */
+  document.getElementById('ecg-analyse-btn')?.addEventListener('click', runECGAnalyse);
+  document.getElementById('ecg-eq-btn')?.addEventListener('click',      runECGEqualise);
+  document.getElementById('ecg-compare-btn')?.addEventListener('click', runECGCompare);
+
+  document.getElementById('ecg-play-out-btn')?.addEventListener('click', async function() {
+    if (_ecgAudio.out) { try{_ecgAudio.out.stop();}catch{} _ecgAudio.out=null;
+      this.textContent='🔊 Play Equalised Output'; return; }
+    if (this._b64) _ecgAudio.out = await _vcPlayB64(this._b64, 'ecg-play-out-btn');
+    else toast('Equalise first','error');
+  });
+
+  document.getElementById('ecg-play-wav-btn')?.addEventListener('click', async function() {
+    if (_ecgAudio.wav) { try{_ecgAudio.wav.stop();}catch{} _ecgAudio.wav=null;
+      this.textContent='🔊 Play Wavelet Output'; return; }
+    if (this._b64) _ecgAudio.wav = await _vcPlayB64(this._b64,'ecg-play-wav-btn');
+    else toast('Run Compare first','error');
+  });
+
+  /* ── Animals Compare Panel ───────────── */
+  document.getElementById('ac-run-btn')?.addEventListener('click', runAnimalsCompare);
+
+  document.getElementById('ac-play-wav-btn')?.addEventListener('click', async function() {
+    try { _acAudio.ai?.stop(); } catch {} _acAudio.ai = null;
+    if (_acAudio.wav) { try { _acAudio.wav.stop(); } catch {} _acAudio.wav = null;
+      this.textContent = '🔊 Play Wavelet Output'; return; }
+    if (this._b64) _acAudio.wav = await _vcPlayB64(this._b64, 'ac-play-wav-btn');
+    else toast('Run comparison first', 'error');
+  });
+
+  document.getElementById('ac-play-ai-btn')?.addEventListener('click', async function() {
+    try { _acAudio.wav?.stop(); } catch {} _acAudio.wav = null;
+    if (_acAudio.ai) { try { _acAudio.ai.stop(); } catch {} _acAudio.ai = null;
+      this.textContent = '🔊 Play YAMNet Output'; return; }
+    if (this._b64) _acAudio.ai = await _vcPlayB64(this._b64, 'ac-play-ai-btn');
+    else toast('Run comparison first', 'error');
+  });
+
+  /* ── Voices Compare Panel ────────────── */
+  document.getElementById('vc-run-btn')?.addEventListener('click', runVoicesCompare);
+
+  document.getElementById('vc-play-wav-btn')?.addEventListener('click', async function() {
+    try { _vcAudio.ai?.stop(); } catch {} _vcAudio.ai = null;
+    if (_vcAudio.wav) { try { _vcAudio.wav.stop(); } catch {} _vcAudio.wav = null;
+      this.textContent = '🔊 Play Wavelet Output'; return; }
+    if (this._b64) _vcAudio.wav = await _vcPlayB64(this._b64, 'vc-play-wav-btn');
+    else toast('Run comparison first', 'error');
+  });
+
+  document.getElementById('vc-play-ai-btn')?.addEventListener('click', async function() {
+    try { _vcAudio.wav?.stop(); } catch {} _vcAudio.wav = null;
+    if (_vcAudio.ai) { try { _vcAudio.ai.stop(); } catch {} _vcAudio.ai = null;
+      this.textContent = '🔊 Play AI Output'; return; }
+    if (this._b64) _vcAudio.ai = await _vcPlayB64(this._b64, 'vc-play-ai-btn');
+    else toast('Run comparison first', 'error');
+  });
+
+  /* ── Time display ────────────────────── */
+  setInterval(()=>{
+    const t=fmt(S.currentTime||0);
+    ['pb-time','in-time','out-time'].forEach(id=>{ const el=document.getElementById(id); if(el)el.textContent=t; });
+  }, 100);
+});
+</script>
+</body>
+</html>
