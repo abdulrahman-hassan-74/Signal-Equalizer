@@ -4,13 +4,13 @@
     {
       "name": "Male Voice",
       "ranges": [
-        { "min": 85, "max": 180 }
+        { "min": 0, "max": 8000 }
       ]
     },
     {
       "name": "Female Voice",
       "ranges": [
-        { "min": 165, "max": 255 }
+        { "min": 8000, "max": 20000 }
       ]
     }
   ]
