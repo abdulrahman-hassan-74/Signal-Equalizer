@@ -2,27 +2,27 @@
   "mode": "Musical Instruments",
   "sliders": [
     {
-      "name": "Kick Drum",
+      "name": "Bass",
       "ranges": [
-        { "min": 40, "max": 100 }
-      ]
-    },
-    {
-      "name": "Bass Guitar",
-      "ranges": [
-        { "min": 100, "max": 400 }
+        { "min": 0, "max": 2000 }
       ]
     },
     {
       "name": "Flute",
       "ranges": [
-        { "min": 1500, "max": 4000 }
+        { "min": 400, "max": 4000 }
       ]
     },
     {
-      "name": "Cymbals",
+      "name": "Kick",
       "ranges": [
-        { "min": 8000, "max": 16000 }
+        { "min": 40, "max": 1000 }
+      ]
+    },
+    {
+      "name": "Organ",
+      "ranges": [
+        { "min": 0, "max": 4000 }
       ]
     }
   ]
