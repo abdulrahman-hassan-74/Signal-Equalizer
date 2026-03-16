@@ -2,27 +2,28 @@
   "mode": "Animal Sounds",
   "sliders": [
     {
-      "name": "Dog Bark",
+      "name": "Bats",
       "ranges": [
-        { "min": 250, "max": 1000 }
+        { "min": 100, "max": 1500 }
       ]
     },
     {
-      "name": "Cat Meow",
+      "name": "Birds",
       "ranges": [
-        { "min": 500, "max": 1500 }
+        { "min": 4000, "max": 6000 },
+        { "min": 200, "max": 600 }
       ]
     },
     {
-      "name": "Bird Chirp",
+      "name": "Frog",
       "ranges": [
-        { "min": 2000, "max": 8000 }
+        { "min": 1500, "max": 4000 }
       ]
     },
     {
-      "name": "Elephant",
+      "name": "Dolphin",
       "ranges": [
-        { "min": 14, "max": 35 }
+        { "min": 6300, "max": 20000 }
       ]
     }
   ]
