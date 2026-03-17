@@ -1,6 +1,6 @@
 # ⚡ Signal Equalizer — DSP Task 2
 
-A full-stack web application for interactive signal equalization using both Fourier and Wavelet transforms. Built with a Python FastAPI backend and a pure HTML/CSS/JavaScript frontend.
+A full-stack web application for interactive signal equalization using Fourier transforms, Wavelet decomposition, and AI-based source separation. Built with a Python FastAPI backend and a pure HTML/CSS/JavaScript frontend.
 
 ---
 
@@ -13,6 +13,7 @@ A full-stack web application for interactive signal equalization using both Four
 - [Running the App](#running-the-app)
 - [How to Use](#how-to-use)
 - [Mode System](#mode-system)
+- [Three Equalization Systems](#three-equalization-systems)
 - [Settings File Format](#settings-file-format)
 - [API Reference](#api-reference)
 - [Technical Details](#technical-details)
@@ -22,69 +23,55 @@ A full-stack web application for interactive signal equalization using both Four
 
 ## Overview
 
-The Signal Equalizer allows users to upload an audio or ECG signal, then interactively adjust the magnitude of specific frequency components using sliders. Changes are reflected immediately across the waveform viewers, frequency spectrum chart, and spectrograms.
+The Signal Equalizer allows users to upload an audio or ECG signal, then interactively adjust the magnitude of specific frequency components using sliders. Changes are reflected immediately across the waveform viewers, frequency spectrum chart, wavelet energy chart, and spectrograms.
 
-The app supports two architecturally distinct modes:
+The app supports three architecturally distinct equalization systems and two mode types:
 
-| Mode Type | Modes | Equalization |
+| Mode Type | Modes | Available Systems |
 |---|---|---|
-| **Generic** | Generic | Frequency domain (FFT) |
-| **Custom** | Instruments, Animals, Voices, ECG | Dual system: FFT + Optimal Wavelet |
+| **Generic** | Generic | System A — Frequency (FFT) only |
+| **Custom** | Instruments, Animals, Voices, ECG | System A (FFT) + System B (Wavelet) + System C (AI) |
 
 ---
 
 ## Features
 
 ### Signal Display
-- **Two linked cine viewers** — input (blue) and output (red) waveforms displayed side by side in large canvases
+- **Two linked cine viewers** — input (blue) and output (red) waveforms displayed side by side
 - **Synchronized scrolling** — zoom and pan on either viewer and both update identically
 - **Playback controls** — Play, Pause, Stop, Speed control (0.25× to 4×)
 - **Zoom & Pan** — buttons and mouse scroll wheel, with drag-to-pan
-- **Audio playback** — plays the equalized output signal through the browser speakers
+- **Input audio playback** — the global **🔊 Input** button in the playback bar always plays the raw uploaded signal
+- **Per-system output audio** — each system row has its own **🔊 Play** button that plays only that system's processed output
 
 ### Frequency Analysis
-- **FFT frequency spectrum** — input and output plotted together on one chart
+- **FFT frequency spectrum** — input and output plotted together with toggle-able visibility
 - **Linear scale** — full frequency range 0 Hz to Nyquist
-- **Audiogram scale** — logarithmic X axis at 125, 250, 500, 1k, 2k, 4k, 8k Hz (hearing test format)
+- **Audiogram scale** — logarithmic X axis at 125, 250, 500, 1k, 2k, 4k, 8k Hz (ISO 8253-1 hearing test format)
 - Scale toggle does not interrupt or reset any functionality
+- Interactive: scroll-to-zoom, drag-to-pan, double-click to reset, hover tooltip with exact values
 
 ### Spectrograms
-- **Two spectrograms** — input and output displayed in parallel in large dedicated panels
-- **Live update** — output spectrogram updates within 1 second of any slider change
-- **Toggle show/hide** — single button hides both spectrograms and expands the frequency chart
-- Color scale: dark blue = low energy, orange/yellow = high energy
+- **Two spectrograms** — input and output in a narrow dedicated column (190 px)
+- **High-resolution axes** — both frequency (Hz/kHz) and time (s/ms) axes with major + minor ticks, device-pixel-ratio aware rendering
+- **Axes adapt** to the signal's actual sample rate so ECG (360 Hz) shows the correct 0–180 Hz range
+- **Live update** — output spectrogram updates within ~55 ms of any slider change
+- **Toggle show/hide** — single button hides both spectrograms
 
 ### Equalizer — Generic Mode
 - **Schema-driven** — load a JSON schema file to auto-generate sliders for arbitrary frequency bands
-- **Manual band adding** — even without a schema, click **＋ Add Band Manually** to define bands one by one
-- **Hybrid workflow** — load a schema to get a starting set of bands, then extend it by adding more manually
-- **Save & Load** — export your current band configuration as a JSON file and reload it later
-- **Purely frequency-based** — no wavelet controls appear in this mode
+- **Manual band adding** — click **＋ Add Band Manually** to define bands one by one
+- **Save & Load** — export your current band configuration as JSON and reload it later
+- **Purely FFT-based** — no wavelet or AI controls appear in this mode
 
-### Equalizer — Custom Modes (Dual System)
-Each custom mode displays two independent control systems simultaneously:
+### Equalizer — Custom Modes (Three Systems)
 
-**System A — Frequency Domain (blue)**
-- FFT spectrum chart showing input vs output
-- 4 sliders, each controlling the magnitude of one component in its frequency range
+Custom modes display three independent equalization systems with a clear visual hierarchy:
 
-**System B — Wavelet Domain (purple)**
-- Wavelet energy bar chart showing per-band RMS energy before and after
-- 4 sliders for the same components, operating in the wavelet domain
-- Uses a pre-assigned optimal wavelet per mode (not user-selectable)
+- **System A — Frequency** occupies a full-width top row (largest chart, most detail)
+- **System B — Wavelet** and **System C — AI** share a side-by-side bottom row
 
-| Mode | Optimal Wavelet | Reason |
-|---|---|---|
-| Musical Instruments | Daubechies db6 | Best for tonal sustained audio signals |
-| Animal Sounds | Daubechies db4 | Good for short transient sounds |
-| Human Voices | Haar | Assigned by course requirements |
-| ECG Abnormalities | Daubechies db4 | Standard in biomedical signal processing |
-
-### AI Analysis
-- Runs signal analysis on the uploaded file
-- **ECG mode** — peak detection, heart rate estimation, arrhythmia classification
-- **Audio modes** — spectral features: peak frequency, RMS energy, spectral centroid, rolloff
-- Results displayed in an expandable card panel
+Only one system is active at a time. The active system drives the output viewers and spectrograms. Inactive systems are visually dimmed and disabled.
 
 ---
 
@@ -94,29 +81,40 @@ Each custom mode displays two independent control systems simultaneously:
 Task2_Signal_Equalizer/
 │
 ├── backend/
-│   ├── main.py                  ← FastAPI server — all API routes
-│   ├── signal_processor.py      ← FFT, IFFT, Spectrogram, Wavelet functions
-│   ├── equalizer_engine.py      ← apply_gain() — core equalization logic
-│   ├── settings_manager.py      ← load/save/validate JSON settings files
-│   ├── ai_models.py             ← AI signal analysis functions
-│   └── generate_synthetic.py    ← Run once to create the test WAV file
+│   ├── main.py                        ← FastAPI server — all API routes
+│   ├── signal_processor.py            ← FFT, IFFT, Spectrogram, Wavelet functions
+│   ├── equalizer_engine.py            ← Core equalization: FFT + Wavelet (exclusive DWT)
+│   ├── settings_manager.py            ← load/save/validate JSON settings files
+│   ├── ai_models.py                   ← AI signal analysis functions
+│   ├── ai_music.py                    ← Music stem separation via Demucs
+│   ├── ai_animal.py                   ← Animal sound classification + separation
+│   ├── ai_human.py                    ← Speaker separation via ConvTasNet (asteroid)
+│   ├── ai_ecg.py                      ← ECG arrhythmia classification (ResNet)
+│   ├── ai_shared.py                   ← Shared audio loading utilities
+│   ├── ecg_inference.py               ← Standalone ECG pipeline (ECGPipeline class)
+│   └── generate_synthetic.py          ← Run once to create the test WAV file
 │
 ├── frontend/
-│   └── index.html               ← Complete frontend (HTML + CSS + JS in one file)
+│   └── index.html                     ← Complete frontend (HTML + CSS + JS)
+│
+├── ecg_pretrainedmodel/
+│   ├── ECG_standalone_version/
+│   │   ├── ecg_resnet_mitbih.pt       ← Pretrained ECG ResNet weights
+│   │   ├── ecg_inference.py           ← Standalone inference module
+│   │   └── ecg_eq_settings.json       ← ECG equalizer band configuration
+│   ├── ECG_Inference_Equalizer.ipynb  ← Training + evaluation notebook
+│   └── ECG_Setup_PhysioNet.ipynb      ← Dataset setup notebook
 │
 └── data/
     ├── settings/
-    │   ├── instruments.json     ← Musical Instruments mode config
-    │   ├── animals.json         ← Animal Sounds mode config
-    │   ├── voices.json          ← Human Voices mode config
-    │   ├── ecg.json             ← ECG Abnormalities mode config
-    │   └── generic.json         ← Empty template for Generic mode
+    │   ├── instruments.json           ← Musical Instruments mode config
+    │   ├── animals.json               ← Animal Sounds mode config
+    │   ├── voices.json                ← Human Voices mode config
+    │   ├── ecg.json                   ← ECG Abnormalities mode config
+    │   └── generic.json               ← Empty template for Generic mode
     └── samples/
-        ├── synthetic_signal.wav ← Generated test signal (10 pure sine waves)
-        ├── instruments_mix.wav  ← Mixed instruments audio file
-        ├── animals_mix.wav      ← Mixed animal sounds audio file
-        ├── voices_mix.wav       ← Mixed voices audio file
-        └── ecg_*.csv            ← ECG signal files from MIT-BIH database
+        ├── synthetic_signal.wav       ← Generated test signal (10 pure sine waves)
+        └── ...                        ← Your own audio/ECG files
 ```
 
 ---
@@ -126,7 +124,7 @@ Task2_Signal_Equalizer/
 ### Prerequisites
 - Python 3.10 or newer
 - A modern browser (Chrome recommended)
-- Git (optional)
+- ffmpeg installed and on PATH (required by Demucs for music separation)
 
 ### Step 1 — Clone or download the project
 
@@ -135,7 +133,7 @@ git clone <repository-url>
 cd Task2_Signal_Equalizer
 ```
 
-### Step 2 — Create a virtual environment (recommended)
+### Step 2 — Create and activate a virtual environment
 
 ```bash
 python -m venv .venv
@@ -147,39 +145,57 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-### Step 3 — Install Python dependencies
+### Step 3 — Install core dependencies
 
 ```bash
-pip install fastapi
-pip install uvicorn
-pip install numpy
-pip install scipy
-pip install pywavelets
-pip install soundfile
-pip install python-multipart
-pip install neurokit2          # optional — needed for ECG AI analysis
+pip install fastapi uvicorn numpy scipy pywavelets soundfile python-multipart
 ```
 
-Or install everything at once:
+### Step 4 — Install AI dependencies (optional but recommended)
+
+Each AI system has its own dependencies:
 
 ```bash
-pip install fastapi uvicorn numpy scipy pywavelets soundfile python-multipart neurokit2
+# System C — Music (Instruments mode)
+pip install demucs
+pip install soundfile==0.11.0      # fixes SoundFileRuntimeError with Demucs
+
+# System C — Animals
+pip install torch torchaudio
+
+# System C — Human Voices
+pip install asteroid
+
+# System C — ECG
+pip install torch wfdb             # wfdb for WFDB file format support
+
+# ECG AI analysis panel
+pip install neurokit2
 ```
 
-### Step 4 — Verify installation
+> **Windows note:** If Demucs fails with `[WinError 2]`, the app automatically falls back to `python -m demucs`. If you see `No module named demucs`, run `pip install demucs` inside your active `.venv`. If you see a `TorchCodec` error, run `pip install torchcodec` or downgrade torchaudio: `pip install torchaudio==2.1.2`.
 
+### Step 5 — Install ffmpeg (required for Demucs)
+
+**Windows:**
 ```bash
-python -c "import fastapi, numpy, scipy, pywt, soundfile; print('All OK')"
+winget install ffmpeg
+```
+Or download from https://ffmpeg.org/download.html and add to PATH.
+
+**Verify:**
+```bash
+ffmpeg -version
 ```
 
-### Step 5 — Generate the synthetic test signal
+### Step 6 — Generate the synthetic test signal
 
 ```bash
 cd backend
 python generate_synthetic.py
 ```
 
-This creates `data/samples/synthetic_signal.wav` — a 5-second signal containing 10 pure sine waves at 100, 300, 500, 1000, 2000, 4000, 6000, 8000, 10000, and 12000 Hz.
+This creates `data/samples/synthetic_signal.wav` — a 5-second signal containing 10 pure sine waves at 100, 300, 500, 1000, 2000, 4000, 6000, 8000, 10000, and 12000 Hz, ideal for verifying equalization behaviour.
 
 ---
 
@@ -198,17 +214,9 @@ INFO:     Uvicorn running on http://127.0.0.1:8000
 INFO:     Started reloader process
 ```
 
-The `--reload` flag means the server automatically restarts whenever you save a Python file.
-
 ### Step 2 — Open the frontend
 
-Open `frontend/index.html` directly in Chrome:
-- Double-click the file in your file explorer, or
-- Drag it into a Chrome window
-
-The top-right corner of the app should show **● Backend OK** in green. If it shows **Backend Offline**, make sure Step 1 is still running.
-
-> **Important:** Keep the terminal with uvicorn running at all times while using the app.
+Open `frontend/index.html` directly in Chrome. The toolbar should show **● Backend OK** in green. If it shows **Backend Offline**, make sure Step 1 is running.
 
 ---
 
@@ -218,110 +226,127 @@ The top-right corner of the app should show **● Backend OK** in green. If it s
 
 1. Click **📂 Load Signal** in the toolbar
 2. Select any `.wav`, `.mp3`, `.ogg`, or `.flac` file
-3. The input waveform, input spectrogram, and FFT chart will all appear automatically
-4. The output is initialized with all sliders at 1.0× (no change)
-
-For testing, use the included `data/samples/synthetic_signal.wav` — it has 10 known frequency spikes that are easy to verify.
+3. The input waveform, spectrogram, and FFT chart appear automatically
+4. All sliders start at 1.0× (no change)
 
 ### Moving Sliders
 
-- Drag any slider up or down
-- All charts update **immediately** — no button press needed
-- The value label above each slider shows the current gain (e.g. `0.0×` = silence, `2.0×` = double)
+- Drag any slider up or down — all charts update immediately with a ~55 ms debounce
+- The value label above each slider shows the current gain (e.g. `0.0×` = silence, `2.0×` = double amplitude)
+- Each system has its own **↺ Reset** button to return all its sliders to 1.0×
 
-### Playback
+### Switching the Active System
 
-| Button | Action |
+Three methods — all equivalent:
+1. Click the **tab bar** at the top of the custom layout (System A / System B / System C)
+2. Click anywhere on a **dimmed (inactive) system panel** — it activates immediately
+3. Click the **panel header** of any system
+
+When you switch, the newly activated system's sliders reset to 1.0× so you start from a clean state.
+
+### Audio Playback
+
+| Control | What it plays |
 |---|---|
-| ▶ Play | Both viewers scroll forward simultaneously |
-| ⏸ Pause | Both viewers freeze at the same position |
-| ⏹ Stop | Both viewers return to the beginning |
-| 🔊 Audio | Plays the equalized output through speakers |
-| Speed slider | Changes playback speed from 0.25× to 4× |
-
-### Zoom and Pan
-
-| Control | Action |
-|---|---|
-| 🔍+ button | Zoom in — see less signal, more detail |
-| 🔍− button | Zoom out — see more of the signal |
-| Mouse scroll wheel | Zoom in/out on either canvas |
-| Click and drag canvas | Pan left or right |
-| ◀ ▶ buttons | Pan left or right by 20% of the window |
-| ↺ Reset | Return to the default view (first 0.5 seconds) |
-
-> Both viewers always stay synchronized. Zooming or panning one automatically updates the other.
+| **🔊 Input** (playback bar) | The raw uploaded signal — always, regardless of active system |
+| **🔊 Play** (System A row) | The FFT-equalized output |
+| **🔊 Play** (System B row) | The Wavelet-equalized output |
+| **🔊 Play** (System C row) | The AI-mixed output |
+| **▶ Play** (playback bar) | Scrolls both cine viewers forward (visual only) |
 
 ### Frequency Scale
 
-Use the **Scale** radio buttons in the playback bar:
-
-- **Linear** — X axis from 0 Hz to the Nyquist frequency, evenly spaced
-- **Audiogram** — X axis showing 125, 250, 500, 1000, 2000, 4000, 8000 Hz in logarithmic spacing, matching the standard hearing test format
-
-Switching scales never resets any sliders or playback state.
-
-### Spectrogram Toggle
-
-Click **👁 Spectrograms** to hide both spectrogram panels. Click again to show them. The frequency chart expands to fill the space.
+- **Linear** — 0 Hz to Nyquist, evenly spaced
+- **Audiogram** — 125 Hz to 8 kHz, logarithmic (ISO 8253-1 standard)
 
 ---
 
 ## Mode System
 
-### Switching Modes
-
-Use the **Mode** dropdown in the toolbar. The equalizer panel updates immediately with the correct sliders for that mode.
-
 ### Generic Mode
 
-Generic mode is for **arbitrary frequency-based equalization**:
+For arbitrary frequency-based equalization. Purely FFT-based — no Wavelet or AI systems appear.
 
-**Option A — Load a schema file (recommended):**
-1. Switch to **⚙️ Generic** in the mode dropdown
-2. Click **📋 Load Schema** in the toolbar and select a JSON file
-3. Sliders are auto-generated — one per frequency band defined in the file
-4. Each slider shows the frequency range as a tooltip (hover over it)
-5. You can then add more bands manually on top of the loaded schema
+Load a JSON schema file to auto-generate sliders, or add bands manually. Save and reload configurations as JSON.
 
-**Option B — Build bands manually from scratch:**
-1. Switch to **⚙️ Generic** — the equalizer panel starts empty
-2. Click **＋ Add Band Manually** shown in the center of the empty panel
-3. Enter a band name (e.g. `Bass`), a min frequency, and a max frequency
-4. A new slider appears immediately
-5. Repeat for as many bands as needed
+### Custom Modes
 
-**Saving your configuration:**
-- Click **💾 Save Schema** to export all current bands as a JSON file
-- Load that file later with **📋 Load Schema** to restore your exact setup
-- The exported file is fully editable in any text editor
+Available modes: **Instruments**, **Animals**, **Voices**, **ECG**
 
-Generic mode only uses the **frequency domain (FFT)**. No wavelet controls appear.
+Each shows all three equalization systems. Use the system tab bar or click any panel to switch between them.
 
-### Custom Modes (Instruments / Animals / Voices / ECG)
+---
 
-Custom modes show the **Dual System layout**:
+## Three Equalization Systems
 
-**Left panel — System A (Frequency Domain)**
-- FFT chart showing input (blue) and output (red) frequency spectrum
-- 4 frequency-domain sliders — one per component
-- Moving these sliders applies gain directly to the FFT bins
+### System A — Frequency Domain (Blue)
 
-**Right panel — System B (Wavelet Domain)**
-- Wavelet energy bar chart — purple = input energy, orange = output energy per band
-- 4 wavelet-domain sliders — same bands as System A but independent
-- Moving these sliders applies gain to the wavelet coefficients
-- The optimal wavelet is displayed as a badge (e.g. `haar`, `db4`, `db6`) — it is fixed and not user-selectable
+Uses the Fast Fourier Transform (FFT). Each slider scales the FFT magnitude bins that fall within the slider's configured frequency range.
 
-Both systems stack: the final output signal is first processed by System A (Fourier), then by System B (Wavelet).
+- Best for **precise frequency targeting** (e.g. exactly 200–400 Hz)
+- Chart: continuous input/output frequency spectrum
+- Works in all modes including Generic
+
+### System B — Wavelet Domain (Purple)
+
+Uses the Discrete Wavelet Transform (DWT). Each slider controls the RMS energy of the wavelet coefficients that correspond to its frequency range.
+
+**Algorithm — Exclusive DWT Level Assignment:**
+
+The DWT decomposes a signal into dyadic frequency octaves. Each `coeffs` index maps to a specific frequency range:
+
+```
+coeffs[0]   = approximation  →  [0,       sr/2^L    ]  (DC + lowest)
+coeffs[1]   = detail cD_L    →  [sr/2^(L+1), sr/2^L ]  (coarsest detail)
+coeffs[2]   = detail cD_(L-1)→  [sr/2^L,  sr/2^(L-1)]
+...
+coeffs[L]   = detail cD_1    →  [sr/4,    sr/2       ]  (finest detail)
+```
+
+For each DWT level, the band with the **greatest Hz overlap** gets exclusive ownership. This prevents bands from compounding gains on shared levels. Setting a slider to 0 truly silences those frequencies — including the approximation coefficients.
+
+**Optimal wavelets per mode:**
+
+| Mode | Wavelet | Reason |
+|---|---|---|
+| Musical Instruments | Daubechies db6 | High vanishing moments — captures smooth tonal signals |
+| Animal Sounds | Daubechies db4 | Compact support — handles short transient bursts |
+| Human Voices | Haar | Fast, simple, assigned by course requirements |
+| ECG Abnormalities | Daubechies db4 | Established biomedical standard for QRS analysis |
+
+The chart shows per-band relative energy (%) for input and output, with DWT frequency ranges shown as sub-labels below each bar. Hover over a bar for an exact tooltip.
+
+> **Note:** Wavelet equalization is less frequency-precise than FFT because DWT bands are dyadic octaves. Its advantage is better time-frequency resolution — it captures transients and signal attacks more faithfully.
+
+### System C — AI Source Separation (Teal)
+
+Uses pretrained deep learning models to separate the signal into its constituent sources, then reconstructs the output as a **weighted sum**:
+
+```
+output = Σ (component_i × gain_i)
+```
+
+**Workflow:**
+1. Activate System C by clicking its tab or panel
+2. Click **🔬 Run Separation** — this runs the AI model (slow, ~5–30 seconds)
+3. Sliders appear — one per separated component with its RMS energy shown
+4. Adjust slider gains; the weighted sum updates instantly (no re-separation needed)
+5. At 1.0× all gains, the output equals the original signal (no lossy artefact)
+
+**AI models per mode:**
+
+| Mode | Model | Components |
+|---|---|---|
+| Instruments | Demucs (htdemucs) | Drums, Bass, Vocals, Other |
+| Animals | YAMNet + Wiener masking | Per detected animal sound class |
+| Voices | ConvTasNet (asteroid) | Per speaker |
+| ECG | ECGResNet (MIT-BIH trained) | Normal, SVEB, PVC, Fusion, Unknown |
 
 ---
 
 ## Settings File Format
 
-All mode configurations are stored as JSON files in `data/settings/`. These files can be edited with any text editor.
-
-### Format
+All mode configurations are stored as JSON in `data/settings/`.
 
 ```json
 {
@@ -359,21 +384,7 @@ All mode configurations are stored as JSON files in `data/settings/`. These file
 }
 ```
 
-### Fields
-
-| Field | Type | Description |
-|---|---|---|
-| `mode` | string | Display name of the mode |
-| `sliders` | array | List of frequency band definitions |
-| `sliders[].id` | integer | Unique identifier for this band |
-| `sliders[].name` | string | Label shown under the slider |
-| `sliders[].ranges` | array | One or more frequency ranges |
-| `ranges[].min` | number | Minimum frequency in Hz |
-| `ranges[].max` | number | Maximum frequency in Hz |
-
-### Multiple Frequency Ranges Per Slider
-
-A single slider can control multiple non-contiguous frequency ranges. For example, a Drums slider can cover both the kick (low) and cymbal (high) frequencies simultaneously:
+A single slider can cover multiple non-contiguous frequency ranges:
 
 ```json
 {
@@ -386,62 +397,56 @@ A single slider can control multiple non-contiguous frequency ranges. For exampl
 }
 ```
 
+> The `name` field in the settings file is used by System A (FFT) and System B (Wavelet) sliders. System C (AI) uses names returned by the AI model itself (e.g. `"Drums"`, `"Bass"`, `"Normal (N)"`).
+
 ---
 
 ## API Reference
 
-The backend runs at `http://localhost:8000`. Interactive documentation is automatically available at `http://localhost:8000/docs` when the server is running.
+Backend runs at `http://localhost:8000`. Interactive docs at `http://localhost:8000/docs`.
 
 | Method | Route | Description |
 |---|---|---|
-| GET | `/ping` or `/health` | Test connection. Returns `{"message": "hello"}` |
+| GET | `/ping` | Health check |
 | POST | `/upload` | Upload audio file. Returns `signal_id`, `sample_rate`, `duration` |
-| GET | `/signal/{sid}` | Get downsampled waveform samples for drawing |
-| POST | `/equalize` | Apply frequency + wavelet gains. Returns output signal + FFT + spectrogram |
-| GET | `/spectrogram/{sid}` | Get 2D spectrogram of the original signal |
-| GET | `/wavelet-compare/{sid}/{mode}` | Compare Fourier vs Wavelet SNR for a mode |
-| GET | `/settings/{mode_name}` | Load mode configuration from JSON file |
-| POST | `/settings/save` | Save mode configuration to JSON file |
-| GET | `/modes/list` | Returns list of available mode names |
-| GET | `/mode-info/{mode}` | Returns mode type (`generic`/`custom`) and optimal wavelet |
-| POST | `/ai/run` | Run AI signal analysis for a given mode |
+| GET | `/signal/{sid}` | Get downsampled waveform for drawing |
+| POST | `/equalize` | Apply FFT + Wavelet gains. Returns output + FFT + spectrogram + wavelet energies |
+| GET | `/spectrogram/{sid}` | Get 2D spectrogram of original signal |
+| GET | `/wavelet-compare/{sid}/{mode}` | Compare Fourier vs Wavelet SNR |
+| GET | `/settings/{mode_name}` | Load mode configuration JSON |
+| POST | `/settings/save` | Save mode configuration JSON |
+| GET | `/mode-info/{mode}` | Returns mode type and optimal wavelet |
+| POST | `/ai/separate` | Run AI source separation (slow). Caches components server-side |
+| POST | `/ai/mix` | Weighted sum of cached AI components (instant). Returns output + FFT + spectrogram |
+| POST | `/ai/run` | Quick AI analysis for the AI Compare panel |
 
-### POST /equalize — Request Body
+### POST /ai/separate
+
+Runs the AI model for the given mode and signal. Call this once per signal per mode.
+
+```json
+{ "signal_id": "ab9b6acb", "mode": "instruments" }
+```
+
+Response includes `components` array with `id`, `name`, `rms_energy`, and `samples_b64` per component.
+
+### POST /ai/mix
+
+Instant weighted sum using cached components. Call this on every slider change.
 
 ```json
 {
   "signal_id": "ab9b6acb",
-  "freq_gains": [
-    {
-      "band_id": 1,
-      "freq_ranges": [[40, 100]],
-      "gain": 0.0
-    }
-  ],
-  "wavelet_gains": [
-    {
-      "band_id": 1,
-      "freq_ranges": [[40, 100]],
-      "gain": 1.5
-    }
-  ],
-  "mode": "instruments"
+  "gains": [
+    { "component_id": 0, "gain": 1.0 },
+    { "component_id": 1, "gain": 0.0 },
+    { "component_id": 2, "gain": 1.5 },
+    { "component_id": 3, "gain": 1.0 }
+  ]
 }
 ```
 
-### POST /equalize — Response
-
-```json
-{
-  "output_signal_b64": "UklGRi...",
-  "fft_input": [{"frequency": 100.0, "magnitude": 0.08}, ...],
-  "fft_output": [{"frequency": 100.0, "magnitude": 0.0}, ...],
-  "spectrogram_output": [[0.1, 0.3, ...], ...],
-  "wavelet_energies_input":  [{"band_id": 1, "name": "Kick Drum", "energy": 0.043}, ...],
-  "wavelet_energies_output": [{"band_id": 1, "name": "Kick Drum", "energy": 0.021}, ...],
-  "wavelet_used": "db6"
-}
-```
+When all gains equal 1.0, the original signal is returned directly to avoid lossy reconstruction artefacts.
 
 ---
 
@@ -450,73 +455,52 @@ The backend runs at `http://localhost:8000`. Interactive documentation is automa
 ### Signal Processing Pipeline
 
 ```
-Upload WAV file
+Upload WAV/MP3/OGG/FLAC
       ↓
-Backend reads with soundfile → converts stereo to mono → stores as Float32 numpy array
+Backend: soundfile → mono Float32 numpy array → stored in memory dict
       ↓
-User moves a slider
+User moves a slider (55 ms debounce)
       ↓
-POST /equalize called with freq_gains + wavelet_gains
+POST /equalize  (System A or B)
+  ├─ System A: rfft → multiply bins in freq_ranges → irfft
+  └─ System B: wavedec → exclusive DWT level assignment → scale coeffs → waverec
+
+POST /ai/mix  (System C, after /ai/separate)
+  └─ output = Σ (component_waveform × gain)
+             returns original signal if all gains == 1.0
       ↓
-System A: np.fft.rfft → multiply bins → np.fft.irfft    (Fourier)
+Result encoded as base64 WAV → browser
       ↓
-System B: pywt.wavedec → multiply coeffs → pywt.waverec  (Wavelet)
-      ↓
-Result encoded as base64 WAV → sent to browser
-      ↓
-Browser decodes with OfflineAudioContext → draws output waveform
-FFT chart updated, spectrogram updated, wavelet energy chart updated
+Browser: OfflineAudioContext.decodeAudioData → Float32Array → CineViewer
+FFT chart, wavelet energy chart, spectrogram all updated
 ```
 
 ### Key Design Decisions
 
-**One `apply_gain()` for all modes**
-The core equalization function accepts a list of `[min_hz, max_hz]` pairs. All modes — Instruments, Animals, Voices, ECG, Generic — call the same function with different frequency ranges. No mode-specific equalization code exists anywhere.
+**Exclusive DWT level ownership**
+In the wavelet system, each DWT coefficient array is assigned to exactly one user band — the one with the greatest Hz overlap. This prevents multiple bands from compounding gains on shared levels (the previous bug where Bass=0 would silence Kick=1.0 levels they shared).
 
-**Schema-driven sliders**
-The equalizer panel has no hardcoded mode knowledge. It reads a JSON config and dynamically generates sliders. Switching modes means loading a different JSON — the UI builds itself automatically.
+**AI separation caching**
+The slow AI model run (`/ai/separate`) happens once per signal and caches the component waveforms on the server. Subsequent slider moves call `/ai/mix` which is a pure numpy weighted sum — instant regardless of signal length.
 
-**Dual system architecture**
-In custom modes, System A (Fourier) and System B (Wavelet) are independent slider sets that both apply to the same signal sequentially. This allows direct comparison: move a System A slider and see the FFT chart change; move a System B slider and see the wavelet energy chart change.
+**Schema-driven, zero hardcoding**
+The frontend has no hardcoded mode knowledge. It reads a JSON settings file and generates sliders dynamically. Adding a new mode requires only a new JSON file.
 
-**Synchronized cine viewers**
-Both viewers share `viewStart` and `viewEnd` values. Any zoom, pan, or playback event on one viewer immediately mirrors to the other via a `syncWith()` reference. No polling or events — direct synchronous call.
+**Per-system audio**
+Three independent `AudioBufferSourceNode` instances are managed — one per system. Playing one stops the others. The global `🔊 Input` button encodes the raw `Float32Array` to WAV in the browser (no server round-trip) and plays the original signal independently.
 
-### Wavelet Research Summary
-
-| Mode | Chosen Wavelet | Why This Wavelet |
-|---|---|---|
-| Musical Instruments | Daubechies db6 | High vanishing moments capture smooth tonal signals efficiently |
-| Animal Sounds | Daubechies db4 | Compact support handles short transient bursts without edge artifacts |
-| Human Voices | Haar | Simple, fast, separates speech energy at the instructor-specified level |
-| ECG | Daubechies db4 | Established standard in biomedical literature for QRS complex analysis |
-| Generic | N/A (Fourier only) | Generic mode is purely frequency-based by design |
+**Spectrogram axis resolution**
+Both axes use a two-tier tick system (major + minor) with step sizes computed via a `_niceF()` algorithm that adapts to panel size and signal duration. All rendering uses `devicePixelRatio` scaling for sharp display on HiDPI screens.
 
 ### Supported File Formats
 
 | Format | Notes |
 |---|---|
-| WAV | Recommended. Lossless, fastest to decode |
-| MP3 | Supported via Web Audio API decoder in browser |
+| WAV | Recommended. Lossless, fastest |
+| MP3 | Supported via Web Audio API |
 | OGG | Supported |
 | FLAC | Supported |
-| CSV | For ECG signals — single column of amplitude values |
-
-### UI Layout Dimensions
-
-The app is designed to use all available screen space. Key panel sizes:
-
-| Panel | Height | Notes |
-|---|---|---|
-| Cine Viewers (×2) | 220 px | Wide side-by-side layout |
-| Generic FFT chart | 340 px | Takes most of the analysis row |
-| Generic Spectrograms (×2) | 340 px | 300 px wide each |
-| Custom FFT chart (System A) | 220 px | Full-height chart |
-| Custom Wavelet chart (System B) | 220 px | Full-height bar chart |
-| Custom Spectrograms (×2) | 160 px min each | 300 px wide column |
-| Equalizer sliders | 155 px | Scrollable horizontally |
-
-All panels are responsive — the page scrolls naturally when the AI Analysis panel is open or when many sliders are added.
+| CSV | ECG signals — single column of amplitude values |
 
 ---
 
@@ -524,10 +508,10 @@ All panels are responsive — the page scrolls naturally when the AI Analysis pa
 
 | Member | Role | Files |
 |---|---|---|
-| Abdullah Gamil | Backend Core + Signal Engine | `signal_processor.py`, `equalizer_engine.py`, `main.py` |
-| Abdulrahman Hassan | Modes + Settings + Data | `settings_manager.py`, all `data/settings/*.json`, all audio sample files |
-| Saga Sadek | Frontend UI + Visualization | `index.html` — FFT chart, spectrograms, equalizer panel, CSS |
-| Alaa Essam | Cine Viewers + Audio + AI | `index.html` — CineViewer, AudioPlayer, api calls, state, AI panel |
+| Abdullah Gamil | Backend Core + Signal Engine + Wavelet Algorithm | `signal_processor.py`, `equalizer_engine.py`, `main.py` |
+| Abdulrahman Hassan | Modes + Settings + Data + AI Integration | `settings_manager.py`, `ai_music.py`, `ai_animal.py`, `ai_human.py`, all `data/settings/*.json` |
+| Saga Sadek | Frontend UI + Visualization + 3-System Layout | `index.html` — FFT chart, spectrograms with axes, 3-way toggle, system panels, CSS design system |
+| Alaa Essam | Cine Viewers + Audio + ECG AI + AI Equalizer | `index.html` — CineViewer, per-system AudioPlayer, AI separation UI, `ai_ecg.py`, `ecg_inference.py` |
 
 ---
 
