@@ -4,25 +4,25 @@
     {
       "name": "Normal Rhythm",
       "ranges": [
-        { "min": 0.5, "max": 40 }
+        { "min": 0, "max": 50 }
       ]
     },
     {
-      "name": "Atrial Fibrillation",
+      "name": "Premature Ventricular Contraction",
       "ranges": [
-        { "min": 4, "max": 9 }
+        { "min": 50, "max": 150 }
       ]
     },
     {
-      "name": "Ventricular Tachycardia",
+      "name": "Atrial Premature Beats",
       "ranges": [
-        { "min": 3, "max": 6 }
+        { "min": 50, "max": 100 }
       ]
     },
     {
-      "name": "Premature Beat",
+      "name": "Bundle Branch Block",
       "ranges": [
-        { "min": 8, "max": 20 }
+        { "min": 50, "max": 200 }
       ]
     }
   ]

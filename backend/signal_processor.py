@@ -4,79 +4,63 @@ import pywt
 
 
 def compute_fft(signal, sample_rate):
+    """
+    Compute high-resolution FFT.
+    Returns list of {frequency, magnitude} dicts — up to 4000 points
+    using peak-preserving downsampling so spikes are never missed.
+    """
     n           = len(signal)
     fft_result  = np.fft.rfft(signal)
     frequencies = np.fft.rfftfreq(n, d=1.0 / sample_rate)
-    magnitudes  = np.abs(fft_result) / n
+    magnitudes  = np.abs(fft_result) / np.sqrt(n)   # sqrt(n) keeps magnitudes visible
 
-    # Limit to audible range 0–20kHz
+    # Limit to audible range 0–20 kHz
     max_freq = min(20000, sample_rate // 2)
     mask     = frequencies <= max_freq
     freqs    = frequencies[mask]
     mags     = magnitudes[mask]
 
-    # Smart downsample: keep max 2000 points but preserve peaks
     total = len(freqs)
-    if total <= 2000:
-        step = 1
-    else:
-        step = total // 2000
+    MAX_POINTS = 4000   # enough for a sharp chart without slowing browser
 
+    if total <= MAX_POINTS:
+        return [{"frequency": float(f), "magnitude": float(m)}
+                for f, m in zip(freqs, mags)]
+
+    # Peak-preserving downsample: within each window keep the bin with max magnitude
+    # This ensures narrow spikes (single tones) are never skipped
+    step   = total // MAX_POINTS
     result = []
     for i in range(0, total, step):
-        # For each step-window, keep the bin with the highest magnitude
-        # This ensures spikes are never skipped
-        end   = min(i + step, total)
-        peak  = int(np.argmax(mags[i:end])) + i
-        result.append({
-            "frequency": float(freqs[peak]),
-            "magnitude": float(mags[peak])
-        })
-
+        end  = min(i + step, total)
+        peak = int(np.argmax(mags[i:end])) + i
+        result.append({"frequency": float(freqs[peak]),
+                        "magnitude": float(mags[peak])})
     return result
 
 
 def compute_ifft(fft_complex, n_samples):
-    """
-    Convert FFT back to time-domain signal.
-    fft_complex: complex numpy array (output of np.fft.rfft)
-    n_samples:   original signal length
-    """
+    """Convert FFT back to time-domain signal."""
     return np.fft.irfft(fft_complex, n=n_samples)
 
 
 def compute_spectrogram(signal, sample_rate):
     """
-    Compute a 2D spectrogram of the signal.
-    Returns a 2D list [frequency_bins][time_bins] with values 0.0 to 1.0.
+    Compute 2D spectrogram normalized to 0–1.
+    Returns 2D list [freq_bins][time_bins].
     """
     _, _, Sxx = scipy_spectrogram(signal, fs=sample_rate, nperseg=256)
-
-    Sxx = np.log10(Sxx + 1e-10)  # log10 instead of log1p
-    Sxx = Sxx - Sxx.min()  # shift so min = 0
-    Sxx = Sxx / (Sxx.max() + 1e-9)  # normalize to 0-1
-
+    Sxx = np.log10(Sxx + 1e-10)
+    Sxx = Sxx - Sxx.min()
+    Sxx = Sxx / (Sxx.max() + 1e-9)
     return Sxx.tolist()
 
 
-
-def apply_wavelet(signal, wavelet_name):
-    """
-    Decomposes a signal into wavelet coefficients.
-    signal:       numpy array of audio samples
-    wavelet_name: string like 'db4', 'sym5', 'morlet'
-    Returns:      list of coefficient arrays (one per frequency level)
-    """
-    coefficients = pywt.wavedec(signal, wavelet_name)
-    return coefficients
+# def apply_wavelet(signal, wavelet_name):
+#     """Decompose signal into wavelet coefficients."""
+#     return pywt.wavedec(signal, wavelet_name)
 
 
 def inverse_wavelet(coefficients, wavelet_name):
-    """
-    Reconstructs a signal from wavelet coefficients.
-    coefficients: list of arrays (output of apply_wavelet)
-    wavelet_name: must be the same wavelet used in apply_wavelet
-    Returns:      numpy array of audio samples
-    """
-    reconstructed = pywt.waverec(coefficients, wavelet_name)
-    return reconstructed
+    """Reconstruct signal from wavelet coefficients."""
+    return pywt.waverec(coefficients, wavelet_name)
