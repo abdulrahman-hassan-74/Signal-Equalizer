@@ -56,9 +56,9 @@ def compute_spectrogram(signal, sample_rate):
     return Sxx.tolist()
 
 
-# def apply_wavelet(signal, wavelet_name):
-#     """Decompose signal into wavelet coefficients."""
-#     return pywt.wavedec(signal, wavelet_name)
+def apply_wavelet(signal, wavelet_name):
+    """Decompose signal into wavelet coefficients."""
+    return pywt.wavedec(signal, wavelet_name)
 
 
 def inverse_wavelet(coefficients, wavelet_name):
