@@ -1,0 +1,29 @@
+{
+  "mode": "Musical Instruments",
+  "sliders": [
+    {
+      "name": "Bass",
+      "ranges": [
+        { "min": 0, "max": 2000 }
+      ]
+    },
+    {
+      "name": "Flute",
+      "ranges": [
+        { "min": 400, "max": 4000 }
+      ]
+    },
+    {
+      "name": "Kick",
+      "ranges": [
+        { "min": 40, "max": 1000 }
+      ]
+    },
+    {
+      "name": "Organ",
+      "ranges": [
+        { "min": 0, "max": 4000 }
+      ]
+    }
+  ]
+}

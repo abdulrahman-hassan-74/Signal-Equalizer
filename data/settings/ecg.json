@@ -1,0 +1,29 @@
+{
+  "mode": "ECG Abnormalities",
+  "sliders": [
+    {
+      "name": "Normal Rhythm",
+      "ranges": [
+        { "min": 0, "max": 50 }
+      ]
+    },
+    {
+      "name": "Premature Ventricular Contraction",
+      "ranges": [
+        { "min": 50, "max": 150 }
+      ]
+    },
+    {
+      "name": "Atrial Premature Beats",
+      "ranges": [
+        { "min": 50, "max": 100 }
+      ]
+    },
+    {
+      "name": "Bundle Branch Block",
+      "ranges": [
+        { "min": 50, "max": 200 }
+      ]
+    }
+  ]
+}

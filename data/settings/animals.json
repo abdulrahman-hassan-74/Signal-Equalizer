@@ -1,0 +1,30 @@
+{
+  "mode": "Animal Sounds",
+  "sliders": [
+    {
+      "name": "Bats",
+      "ranges": [
+        { "min": 100, "max": 1500 }
+      ]
+    },
+    {
+      "name": "Birds",
+      "ranges": [
+        { "min": 4000, "max": 6000 },
+        { "min": 200, "max": 600 }
+      ]
+    },
+    {
+      "name": "Frog",
+      "ranges": [
+        { "min": 1500, "max": 4000 }
+      ]
+    },
+    {
+      "name": "Dolphin",
+      "ranges": [
+        { "min": 6300, "max": 20000 }
+      ]
+    }
+  ]
+}
