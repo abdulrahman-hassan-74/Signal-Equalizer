@@ -1279,376 +1279,53 @@ async function _encodeAudioToB64(samples, sr){
   return btoa(bin);
 }
 
-// ── CineViewer — synchronized wall-clock playback ─────────────────────────────
-// Shared playback clock drives BOTH viewers from a single rAF loop.
-// Fixes: frame-rate drift, desync between input/output, inconsistent scrolling.
-const _CineClock = {
-  playing:   false,
-  startWall: 0,       // performance.now() when play began
-  startSec:  0,       // S.currentTime when play began
-  speed:     1.0,
-  anim:      null,
-  viewers:   [],      // all registered CineViewer instances
-
-  register(v){ if(!this.viewers.includes(v)) this.viewers.push(v); },
-
-  play(){
-    if(this.playing) return;
-    // Check at least one viewer has a signal
-    const anyReady = this.viewers.some(v => v.sig);
-    if(!anyReady) return;
-    this.playing   = true;
-    this.startWall = performance.now();
-    this.startSec  = S.currentTime || 0;
-    S.isPlaying    = true;
-    const tick = () => {
-      if(!this.playing) return;
-      // Wall-clock elapsed time → current position in seconds
-      const elapsedMs = performance.now() - this.startWall;
-      const nowSec    = this.startSec + (elapsedMs / 1000) * this.speed;
-      // Find max signal duration across all viewers
-      const maxDur = Math.max(...this.viewers.map(v => v.sig ? v.sig.length / v.sr : 0));
-      if(nowSec >= maxDur){ this.stop(); return; }
-      S.currentTime = nowSec;
-      // Render all viewers at the shared time position
-      this.viewers.forEach(v => { if(v.sig) v._scrollTo(nowSec); });
-      this.anim = requestAnimationFrame(tick);
-    };
-    this.anim = requestAnimationFrame(tick);
-  },
-
-  pause(){
-    if(!this.playing) return;
-    this.playing = false;
-    S.isPlaying  = false;
-    cancelAnimationFrame(this.anim);
-    this.viewers.forEach(v => { if(v.sig) v.draw(); });
-  },
-
-  stop(){
-    this.playing  = false;
-    S.isPlaying   = false;
-    S.currentTime = 0;
-    cancelAnimationFrame(this.anim);
-    this.viewers.forEach(v => { if(v.sig){ v.vs=0; v.ve=Math.min(v.sig.length,Math.floor(v.sr*0.5)); v.draw(); }});
-  },
-
-  setSpeed(s){
-    const wasPlaying = this.playing;
-    if(wasPlaying){ // reset startWall/startSec so speed change is seamless
-      this.startSec  = S.currentTime;
-      this.startWall = performance.now();
-    }
-    this.speed = Math.max(0.1, Math.min(8, s));
-  }
-};
-
+// ── Viewer classes (unchanged from original) ────────────────────────────────
 class CineViewer{
-  constructor(id, color='#4a9eff'){
-    this.cv    = document.getElementById(id);
-    this.ctx   = this.cv.getContext('2d');
-    this.color = color;
-    this.sig   = null;
-    this.sr    = 44100;
-    this.vs    = 0;    // view start (samples)
-    this.ve    = 0;    // view end (samples)
-    this._drag = false; this._dragX = 0; this._dragVS = 0;
-    this._hover= null; // {x, sec, amp}
-    _CineClock.register(this);
-    this._setup();
-    this._empty();
+  constructor(id,color='#4a9eff'){
+    this.cv=document.getElementById(id);this.ctx=this.cv.getContext('2d');
+    this.color=color;this.sig=null;this.sr=44100;this.vs=0;this.ve=0;
+    this.speed=1;this.anim=null;this.partner=null;this._sync=false;
+    this._drag=false;this._dragX=0;this._dragVS=0;
+    this._setup();this._empty();
   }
-
-  // ── Load ──────────────────────────────────────────────────────────────────
-  load(samples, sr){
-    this.sig = samples;
-    this.sr  = sr;
-    this.vs  = 0;
-    // Default window: 0.5s or full signal if shorter
-    this.ve  = Math.min(samples.length, Math.floor(sr * 0.5));
-    this.draw();
-  }
-
-  // ── Scroll to a given time (called by clock during playback) ─────────────
-  _scrollTo(sec){
-    if(!this.sig) return;
-    const winSamples = this.ve - this.vs;
-    const curSample  = Math.floor(sec * this.sr);
-    // Keep playhead in the right 20% of the window (scroll-follow)
-    const scrollThresh = this.vs + winSamples * 0.8;
-    if(curSample >= scrollThresh && curSample + winSamples * 0.2 < this.sig.length){
-      this.vs = curSample - Math.floor(winSamples * 0.8);
-      this.ve = this.vs + winSamples;
-    }
-    // Clamp
-    if(this.ve > this.sig.length){ this.ve = this.sig.length; this.vs = Math.max(0, this.ve - winSamples); }
-    if(this.vs < 0){ this.vs = 0; this.ve = Math.min(this.sig.length, winSamples); }
-    this.draw();
-  }
-
-  // ── Main draw ─────────────────────────────────────────────────────────────
-  draw(){
-    const{cv:c, ctx, sig, vs, ve, color} = this;
-    // Resize canvas to CSS size for sharp rendering
-    const dpr = window.devicePixelRatio || 1;
-    const cw  = c.clientWidth  || c.width;
-    const ch  = c.clientHeight || c.height;
-    if(c.width !== Math.round(cw*dpr) || c.height !== Math.round(ch*dpr)){
-      c.width  = Math.round(cw * dpr);
-      c.height = Math.round(ch * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-    const W = cw, H = ch, mid = H / 2;
-
-    // Background
-    ctx.fillStyle = '#05050f';
-    ctx.fillRect(0, 0, W, H);
-
-    if(!sig){ this._empty(); return; }
-
-    // ── ECG-style grid ──────────────────────────────────────────────────────
-    const durSec     = (ve - vs) / this.sr;
-    const secPerPx   = durSec / W;
-
-    // Minor grid: 0.04s (40ms) lines — ECG small box
-    // Major grid: 0.2s (200ms) lines — ECG large box
-    const minorSec = this._niceGridStep(durSec, W, 80);   // ~80px per minor tick
-    const majorSec = minorSec * 5;
-
-    // Minor lines
-    ctx.strokeStyle = 'rgba(30,30,80,0.7)';
-    ctx.lineWidth   = 0.5;
-    const tStart = Math.floor(vs / this.sr / minorSec) * minorSec;
-    for(let t = tStart; t <= ve / this.sr + minorSec; t += minorSec){
-      const px = (t - vs / this.sr) / durSec * W;
-      if(px < 0 || px > W) continue;
-      ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, H); ctx.stroke();
-    }
-    // Amplitude minor grid (4 lines)
-    [0.25, 0.5, 0.75].forEach(f => {
-      ctx.strokeStyle = 'rgba(25,25,70,0.7)'; ctx.lineWidth = 0.5;
-      ctx.beginPath(); ctx.moveTo(0, f*H); ctx.lineTo(W, f*H); ctx.stroke();
-    });
-
-    // Major lines + time labels
-    const tStartM = Math.floor(vs / this.sr / majorSec) * majorSec;
-    for(let t = tStartM; t <= ve / this.sr + majorSec; t += majorSec){
-      const px = (t - vs / this.sr) / durSec * W;
-      if(px < -1 || px > W + 1) continue;
-      ctx.strokeStyle = 'rgba(50,50,120,0.85)'; ctx.lineWidth = 0.8;
-      ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, H); ctx.stroke();
-      // Time label
-      ctx.fillStyle  = '#404080';
-      ctx.font       = '9px monospace';
-      ctx.textAlign  = 'center';
-      const lbl = t >= 1 ? t.toFixed(1)+'s' : (t*1000).toFixed(0)+'ms';
-      ctx.fillText(lbl, px, H - 3);
-    }
-
-    // Zero line
-    ctx.strokeStyle = '#1a1a50'; ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(W, mid); ctx.stroke();
-
-    // ── Waveform ────────────────────────────────────────────────────────────
-    const s0 = Math.floor(Math.max(0, vs));
-    const s1 = Math.ceil(Math.min(sig.length, ve));
-    const sl = sig.subarray(s0, s1);
-    const ln = sl.length;
-    if(!ln){ return; }
-
-    // Auto-scale amplitude: use RMS of visible window, clip at ±3σ
-    let sumSq = 0;
-    for(let i = 0; i < ln; i++) sumSq += sl[i]*sl[i];
-    const rms     = Math.sqrt(sumSq / ln) || 1e-6;
-    const peakAbs = Math.max(...Array.from(sl).map(Math.abs)) || rms;
-    // Scale so RMS sits at ~35% height, but never clip more than 1% of samples
-    const amp = mid * 0.70 / Math.max(rms * 3, peakAbs * 0.5);
-
-    ctx.strokeStyle = color;
-    ctx.lineWidth   = ln <= W * 2 ? 1.5 : 1.0;
-    ctx.beginPath();
-    if(ln <= W){
-      const ppx = W / ln;
-      for(let i = 0; i < ln; i++){
-        const x = i * ppx, y = mid - sl[i] * amp;
-        i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
-      }
-    } else {
-      const spp = ln / W;
-      for(let px = 0; px < W; px++){
-        const a = Math.floor(px * spp), b = Math.min(Math.floor((px+1)*spp), ln);
-        let mn = Infinity, mx = -Infinity;
-        for(let k = a; k < b; k++){ if(sl[k]<mn)mn=sl[k]; if(sl[k]>mx)mx=sl[k]; }
-        const yH = mid - mx*amp, yL = mid - mn*amp;
-        px ? ctx.lineTo(px, yH) : ctx.moveTo(px, yH);
-        ctx.lineTo(px, yL);
-      }
-    }
-    ctx.stroke();
-
-    // ── Playhead cursor ──────────────────────────────────────────────────────
-    const curSec = S.currentTime || 0;
-    if(S.isPlaying || curSec > 0){
-      const curSamp = curSec * this.sr;
-      if(curSamp >= vs && curSamp <= ve){
-        const px = (curSamp - vs) / (ve - vs) * W;
-        // Glow + line
-        ctx.save();
-        ctx.shadowColor = '#ffcc44'; ctx.shadowBlur = 8;
-        ctx.strokeStyle = '#ffcc44'; ctx.lineWidth = 1.5;
-        ctx.setLineDash([4, 3]);
-        ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, H);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.restore();
-        // Current time badge
-        const timeLbl = fmt(curSec);
-        ctx.font       = 'bold 10px monospace';
-        ctx.fillStyle  = 'rgba(8,8,24,0.85)';
-        const tw = ctx.measureText(timeLbl).width + 8;
-        const bx = Math.min(px + 3, W - tw - 2);
-        ctx.fillRect(bx, 3, tw, 14);
-        ctx.fillStyle = '#ffcc44';
-        ctx.textAlign = 'left';
-        ctx.fillText(timeLbl, bx + 4, 13);
-      }
-    }
-
-    // ── Hover tooltip ────────────────────────────────────────────────────────
-    if(this._hover){
-      const {x, sec, amp: a} = this._hover;
-      const lines = [fmt(sec), a.toFixed(4)];
-      ctx.font       = '10px monospace';
-      const tw       = Math.max(...lines.map(l=>ctx.measureText(l).width)) + 12;
-      let bx = x + 6; if(bx + tw > W) bx = x - tw - 6;
-      ctx.fillStyle   = 'rgba(8,8,28,0.92)';
-      ctx.strokeStyle = '#333366'; ctx.lineWidth = 1;
-      this._rr(ctx, bx, 6, tw, 32, 4); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#aaaadd'; ctx.textAlign = 'left';
-      ctx.fillText(lines[0], bx+6, 19);
-      ctx.fillStyle = '#6666aa';
-      ctx.fillText(lines[1], bx+6, 32);
-    }
-
-    // ── VIEW range label (bottom corners) ────────────────────────────────────
-    ctx.fillStyle  = '#2a2a60';
-    ctx.font       = '10px monospace';
-    ctx.textAlign  = 'left';
-    ctx.fillText(fmt(vs / this.sr), 4, H - 4);
-    ctx.textAlign  = 'right';
-    ctx.fillText(fmt(ve / this.sr), W - 4, H - 4);
-  }
-
-  // ── Playback controls (delegate to shared clock) ─────────────────────────
-  play() { _CineClock.play(); }
-  pause(){ _CineClock.pause(); }
-  stop() { _CineClock.stop(); }
-  setSpeed(s){ _CineClock.setSpeed(s); }
-
-  // ── View navigation ──────────────────────────────────────────────────────
-  zoom(f){
-    if(!this.sig) return;
-    const centre = (this.vs + this.ve) / 2;
-    const half   = Math.max(this.sr * 0.02,
-                   Math.min(this.sig.length / 2, (this.ve - this.vs) / 2 * f));
-    this.vs = Math.max(0, centre - half);
-    this.ve = Math.min(this.sig.length, centre + half);
-    this.draw();
-    this._syncPartner();
-  }
-  pan(dir){
-    if(!this.sig) return;
-    const win  = this.ve - this.vs;
-    const step = win * 0.25 * dir;
-    this.vs = Math.max(0, this.vs + step);
-    this.ve = this.vs + win;
-    if(this.ve > this.sig.length){ this.ve = this.sig.length; this.vs = Math.max(0, this.ve - win); }
-    this.draw();
-    this._syncPartner();
-  }
-  reset(){
-    if(!this.sig) return;
-    this.vs = 0;
-    this.ve = Math.min(this.sig.length, Math.floor(this.sr * 0.5));
-    this.draw();
-    this._syncPartner();
-  }
-
-  // ── Partner sync (pan/zoom only — NOT playback) ──────────────────────────
-  syncWith(other){ this._partner = other; other._partner = this; }
-  _syncPartner(){
-    if(!this._partner || !this._partner.sig || this._syncing) return;
-    this._partner._syncing = true;
-    this._partner.vs = Math.min(this.vs, this._partner.sig.length);
-    this._partner.ve = Math.min(this.ve, this._partner.sig.length);
-    this._partner.draw();
-    this._partner._syncing = false;
-  }
-
-  // ── Mouse events ─────────────────────────────────────────────────────────
   _setup(){
-    const c = this.cv;
-    c.style.cursor = 'crosshair';
-
-    c.addEventListener('mousedown', e => {
-      if(!this.sig || _CineClock.playing) return;
-      this._drag   = true;
-      this._dragX  = e.offsetX;
-      this._dragVS = this.vs;
-      c.style.cursor = 'grabbing';
-    });
-    c.addEventListener('mousemove', e => {
-      if(!this.sig) return;
-      if(this._drag && !_CineClock.playing){
-        const dx    = e.offsetX - this._dragX;
-        const win   = this.ve - this.vs;
-        const shift = -(dx / c.clientWidth) * win;
-        this.vs = Math.max(0, this._dragVS + shift);
-        this.ve = this.vs + win;
-        if(this.ve > this.sig.length){ this.ve = this.sig.length; this.vs = Math.max(0, this.ve - win); }
-        this.draw(); this._syncPartner();
-      }
-      // Hover tooltip
-      const durSec = (this.ve - this.vs) / this.sr;
-      const sec    = this.vs / this.sr + (e.offsetX / c.clientWidth) * durSec;
-      const sIdx   = Math.floor(sec * this.sr);
-      const a      = (sIdx >= 0 && sIdx < this.sig.length) ? this.sig[sIdx] : 0;
-      this._hover  = { x: e.offsetX, sec, amp: a };
-      this.draw();
-    });
-    c.addEventListener('mouseup',    () => { this._drag = false; c.style.cursor = 'crosshair'; });
-    c.addEventListener('mouseleave', () => { this._drag = false; this._hover = null; c.style.cursor = 'crosshair'; this.draw(); });
-    c.addEventListener('wheel', e => {
-      e.preventDefault();
-      if(!this.sig) return;
-      this.zoom(e.deltaY > 0 ? 1.2 : 0.83);
-    }, { passive: false });
-    c.addEventListener('dblclick', () => this.reset());
+    const c=this.cv;c.style.cursor='grab';
+    c.addEventListener('mousedown',e=>{if(!this.sig)return;this._drag=true;this._dragX=e.offsetX;this._dragVS=this.vs;c.style.cursor='grabbing';});
+    c.addEventListener('mousemove',e=>{if(!this._drag||!this.sig)return;const dx=e.offsetX-this._dragX,win=this.ve-this.vs,shift=-(dx/c.clientWidth)*win;this.vs=Math.max(0,this._dragVS+shift);this.ve=this.vs+win;if(this.ve>this.sig.length){this.ve=this.sig.length;this.vs=this.ve-win;}this.draw();this._sp();});
+    c.addEventListener('mouseup',()=>{this._drag=false;c.style.cursor='grab';});
+    c.addEventListener('mouseleave',()=>{this._drag=false;c.style.cursor='grab';});
+    c.addEventListener('wheel',e=>{e.preventDefault();if(!this.sig)return;this.zoom(e.deltaY>0?1.15:0.87);},{passive:false});
   }
-
-  // ── Helpers ──────────────────────────────────────────────────────────────
-  _niceGridStep(totalSec, widthPx, targetGapPx){
-    // Returns a "nice" time step in seconds so ticks land on clean values
-    const rawStep = totalSec / (widthPx / targetGapPx);
-    const steps   = [0.001,0.002,0.005,0.01,0.02,0.05,0.1,0.2,0.5,1,2,5,10,20,60];
-    for(const s of steps) if(s >= rawStep) return s;
-    return 60;
+  load(samples,sr){this.sig=samples;this.sr=sr;this.vs=0;this.ve=Math.min(samples.length,Math.floor(sr*0.5));this.draw();}
+  draw(){
+    const{cv:c,ctx,sig,vs,ve,color}=this;const w=c.width,h=c.height,mid=h/2;
+    ctx.fillStyle='#080818';ctx.fillRect(0,0,w,h);
+    if(!sig){this._empty();return;}
+    ctx.strokeStyle='#14143a';ctx.lineWidth=0.5;
+    for(let i=1;i<10;i++){const x=(i/10)*w;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();}
+    [0.25,0.5,0.75].forEach(f=>{ctx.beginPath();ctx.moveTo(0,f*h);ctx.lineTo(w,f*h);ctx.stroke();});
+    ctx.strokeStyle='#1e1e55';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,mid);ctx.lineTo(w,mid);ctx.stroke();
+    const s0=Math.floor(Math.max(0,vs)),s1=Math.ceil(Math.min(sig.length,ve));
+    const sl=sig.subarray(s0,s1),ln=sl.length;if(!ln)return;
+    const amp=mid*0.86;ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.beginPath();
+    if(ln<=w){const ppx=w/ln;for(let i=0;i<ln;i++){const x=i*ppx,y=mid-sl[i]*amp;i?ctx.lineTo(x,y):ctx.moveTo(x,y);}}
+    else{const spp=ln/w;for(let px=0;px<w;px++){const a=Math.floor(px*spp),b=Math.floor((px+1)*spp);let mn=Infinity,mx=-Infinity;for(let k=a;k<b&&k<ln;k++){if(sl[k]<mn)mn=sl[k];if(sl[k]>mx)mx=sl[k];}const yH=mid-mx*amp,yL=mid-mn*amp;px?ctx.lineTo(px,yH):ctx.moveTo(px,yH);ctx.lineTo(px,yL);}}
+    ctx.stroke();
+    ctx.fillStyle='#383870';ctx.font='10px monospace';
+    ctx.textAlign='left';ctx.fillText(fmt(vs/this.sr),5,h-4);
+    ctx.textAlign='right';ctx.fillText(fmt(ve/this.sr),w-5,h-4);
+    if(S.isPlaying){const cur=S.currentTime*this.sr;if(cur>=vs&&cur<=ve){const px=((cur-vs)/(ve-vs))*w;ctx.strokeStyle='#ffbb44';ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(px,0);ctx.lineTo(px,h);ctx.stroke();ctx.setLineDash([]);}}
   }
-  _rr(ctx,x,y,w,h,r){
-    ctx.beginPath();
-    ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arcTo(x+w,y,x+w,y+r,r);
-    ctx.lineTo(x+w,y+h-r);ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
-    ctx.lineTo(x+r,y+h);ctx.arcTo(x,y+h,x,y+h-r,r);
-    ctx.lineTo(x,y+r);ctx.arcTo(x,y,x+r,y,r);ctx.closePath();
-  }
-  _empty(){
-    const{cv:c,ctx}=this;
-    ctx.fillStyle='#05050f';ctx.fillRect(0,0,c.width,c.height);
-    ctx.fillStyle='#1e1e45';ctx.font='13px Segoe UI';ctx.textAlign='center';
-    ctx.fillText('Upload a signal to display',c.width/2,c.height/2-7);
-    ctx.fillStyle='#14143a';ctx.font='11px Segoe UI';
-    ctx.fillText('WAV · MP3 · OGG · FLAC · CSV',c.width/2,c.height/2+10);
-  }
+  _empty(){const{cv:c,ctx}=this;ctx.fillStyle='#080818';ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle='#2a2a55';ctx.font='13px Segoe UI';ctx.textAlign='center';ctx.fillText('Upload a signal to display',c.width/2,c.height/2-7);ctx.fillStyle='#1a1a40';ctx.font='11px Segoe UI';ctx.fillText('WAV · MP3 · OGG · FLAC',c.width/2,c.height/2+12);}
+  play(){if(!this.sig||S.isPlaying)return;S.isPlaying=true;const step=()=>{if(!S.isPlaying)return;const win=this.ve-this.vs,adv=Math.floor((this.sr/60)*this.speed);if(this.vs+win+adv>=this.sig.length){this.stop();return;}this.vs+=adv;this.ve=this.vs+win;S.currentTime=this.vs/this.sr;this.draw();this._sp();this.anim=requestAnimationFrame(step);};this.anim=requestAnimationFrame(step);}
+  pause(){S.isPlaying=false;cancelAnimationFrame(this.anim);}
+  stop(){S.isPlaying=false;S.currentTime=0;cancelAnimationFrame(this.anim);if(this.sig){this.vs=0;this.ve=Math.min(this.sig.length,Math.floor(this.sr*0.5));}this.draw();this._sp();}
+  setSpeed(s){this.speed=Math.max(0.25,Math.min(4,s));}
+  zoom(f){if(!this.sig)return;const c=(this.vs+this.ve)/2,h=Math.max(this.sr*0.05,Math.min(this.sig.length/2,(this.ve-this.vs)/2*f));this.vs=Math.max(0,c-h);this.ve=Math.min(this.sig.length,c+h);this.draw();this._sp();}
+  pan(dir){if(!this.sig)return;const win=this.ve-this.vs;this.vs=Math.max(0,this.vs+win*0.2*dir);this.ve=this.vs+win;if(this.ve>this.sig.length){this.ve=this.sig.length;this.vs=this.ve-win;}this.draw();this._sp();}
+  reset(){if(!this.sig)return;this.vs=0;this.ve=Math.min(this.sig.length,Math.floor(this.sr*0.5));this.draw();this._sp();}
+  syncWith(other){this.partner=other;other.partner=this;}
+  _sp(){if(!this.partner||this._sync)return;this.partner._sync=true;this.partner.vs=Math.max(0,this.vs);this.partner.ve=Math.min(this.partner.sig?.length||this.ve,this.ve);this.partner.draw();this.partner._sync=false;}
 }
 
 class Spectrogram{
@@ -2443,18 +2120,10 @@ document.addEventListener('DOMContentLoaded',async()=>{
   document.getElementById('ai-separate-btn').addEventListener('click',runAISeparate);
 
   // Playback controls
-  document.getElementById('btn-play').addEventListener('click',()=>{ _CineClock.play(); });
-  document.getElementById('btn-pause').addEventListener('click',()=>{ _CineClock.pause(); });
-  document.getElementById('btn-stop').addEventListener('click',()=>{
-    _CineClock.stop();
-    AudioP.stop();AudioPlayers.stopAll();
-    document.getElementById('btn-audio').textContent='🔊 Audio';
-  });
-  document.getElementById('speed-r').addEventListener('input',e=>{
-    const s=e.target.value/100;
-    document.getElementById('speed-lbl').textContent=s.toFixed(2)+'×';
-    _CineClock.setSpeed(s);AudioP.setSpeed(s);AudioPlayers.setSpeed(s);
-  });
+  document.getElementById('btn-play').addEventListener('click',()=>{inV.play();outV.play();});
+  document.getElementById('btn-pause').addEventListener('click',()=>{inV.pause();outV.pause();});
+  document.getElementById('btn-stop').addEventListener('click',()=>{inV.stop();outV.stop();AudioP.stop();AudioPlayers.stopAll();document.getElementById('btn-audio').textContent='🔊 Audio';});
+  document.getElementById('speed-r').addEventListener('input',e=>{const s=e.target.value/100;document.getElementById('speed-lbl').textContent=s.toFixed(2)+'×';inV.setSpeed(s);outV.setSpeed(s);AudioP.setSpeed(s);AudioPlayers.setSpeed(s);});
   document.getElementById('btn-zi').addEventListener('click',()=>inV.zoom(0.5));
   document.getElementById('btn-zo').addEventListener('click',()=>inV.zoom(2.0));
   document.getElementById('btn-pl').addEventListener('click',()=>inV.pan(-1));

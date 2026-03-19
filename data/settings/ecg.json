@@ -4,25 +4,25 @@
     {
       "name": "Normal Rhythm",
       "ranges": [
-        { "min": 0, "max": 50 }
+        { "min": 5.4, "max": 32.3 }
       ]
     },
     {
       "name": "Premature Ventricular Contraction",
       "ranges": [
-        { "min": 50, "max": 150 }
+        { "min": 0, "max": 21 }
       ]
     },
     {
-      "name": "Atrial Premature Beats",
+      "name": "Supraventricular Ectopic Beat",
       "ranges": [
-        { "min": 50, "max": 100 }
+        { "min": 2, "max": 33.2 }
       ]
     },
     {
       "name": "Bundle Branch Block",
       "ranges": [
-        { "min": 50, "max": 200 }
+        { "min": 2, "max": 31.2 }
       ]
     }
   ]

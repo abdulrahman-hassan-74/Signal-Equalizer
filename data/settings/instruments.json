@@ -2,27 +2,27 @@
   "mode": "Musical Instruments",
   "sliders": [
     {
-      "name": "Bass",
+      "name": "Flute",
       "ranges": [
-        { "min": 0, "max": 2000 }
+        { "min": 2000, "max": 4000 }
       ]
     },
     {
-      "name": "Flute",
+      "name": "Piano",
       "ranges": [
-        { "min": 400, "max": 4000 }
+        { "min": 560, "max": 2000 }
       ]
     },
     {
       "name": "Kick",
       "ranges": [
-        { "min": 40, "max": 1000 }
+        { "min": 0, "max": 572 }
       ]
     },
     {
-      "name": "Organ",
+      "name": "Glockenspiel",
       "ranges": [
-        { "min": 0, "max": 4000 }
+        { "min": 4000, "max": 20000 }
       ]
     }
   ]

@@ -17,7 +17,7 @@ from pydantic import BaseModel
 from typing import List, Optional, Dict
 
 from signal_processor  import compute_fft, compute_spectrogram
-from equalizer_engine  import (_apply_gain_fourier, apply_wavelet_gains,
+from equalizer_engine  import (_apply_gain_fourier, apply_wavelet_gains, _apply_gain_windowed,
                                 get_wavelet_band_energies, OPTIMAL_WAVELETS)
 from settings_manager  import load_settings, save_settings
 
@@ -160,8 +160,16 @@ def equalize(req: EqualizeRequest):
     signal, sr = signals[req.signal_id]
     result = signal.copy()
 
+    WINDOWED_MODES = { "instruments","ecg"}
     for band in req.freq_gains:
-        result = _apply_gain_fourier(result, sr, band.freq_ranges, band.gain)
+        if req.mode in WINDOWED_MODES:
+            result = _apply_gain_windowed(
+                result, sr,
+                [{"freq_ranges": band.freq_ranges, "gain": band.gain}],
+                window_type="gaussian"
+            )
+        else:
+            result = _apply_gain_fourier(result, sr, band.freq_ranges, band.gain)
 
     wavelet_used = None
     if req.mode in CUSTOM_MODES and req.wavelet_gains:
@@ -189,6 +197,9 @@ def equalize(req: EqualizeRequest):
         wav_in  = get_wavelet_band_energies(signal, sr, bi, wavelet_used)
         wav_out = get_wavelet_band_energies(result, sr, bi, wavelet_used)
 
+    # Extract WPD level from energy data (all bands share the same level)
+    wpd_level = wav_in[0].get("wpd_level") if wav_in else None
+
     return {
         "output_signal_b64":       b64,
         "fft_input":               compute_fft(signal, sr),
@@ -197,6 +208,7 @@ def equalize(req: EqualizeRequest):
         "wavelet_energies_input":  wav_in,
         "wavelet_energies_output": wav_out,
         "wavelet_used":            wavelet_used,
+        "wpd_level":               wpd_level,
     }
 
 
