@@ -77,7 +77,6 @@ Input and output plotted together in real time. **Linear** shows the full range 
 ### Spectrogram Viewers
 
 Two high-resolution 2D time-frequency heatmaps — input and output. Axes auto-adapt to the signal's actual sample rate. The output spectrogram updates within ~55 ms of any slider change.
-<img width="418" height="556" alt="Image" src="https://github.com/user-attachments/assets/fb1d1cc1-95f2-4d56-bd6a-02ef9bbf1140" />
 
 
 ---
@@ -140,8 +139,9 @@ Separates a music file into its individual instrument stems using the **Demucs h
 
 > 🎬 **Demo**
 >
-> ![Instruments Demo](docs/videos/instruments-demo.gif)
->
+<video src="https://github.com/user-attachments/assets/5492ba66-f09e-4a22-974b-f8dee605bf66" controls width="800" style="border-radius: 20px; border: 3px solid #00ffff; box-shadow: 0 0 30px #00ffff66;">
+    Your browser does not support the video tag.
+  </video>
 > [▶ Watch full demo video](docs/videos/instruments-demo.mp4)
 
 ---
