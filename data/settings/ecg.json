@@ -1,0 +1,29 @@
+{
+  "mode": "ECG Abnormalities",
+  "sliders": [
+    {
+      "name": "Normal Rhythm",
+      "ranges": [
+        { "min": 5.4, "max": 32.3 }
+      ]
+    },
+    {
+      "name": "Premature Ventricular Contraction",
+      "ranges": [
+        { "min": 0, "max": 21 }
+      ]
+    },
+    {
+      "name": "Supraventricular Ectopic Beat",
+      "ranges": [
+        { "min": 2, "max": 33.2 }
+      ]
+    },
+    {
+      "name": "Bundle Branch Block",
+      "ranges": [
+        { "min": 2, "max": 31.2 }
+      ]
+    }
+  ]
+}

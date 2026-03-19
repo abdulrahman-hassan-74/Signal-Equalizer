@@ -1,0 +1,29 @@
+{
+  "mode": "Musical Instruments",
+  "sliders": [
+    {
+      "name": "Flute",
+      "ranges": [
+        { "min": 2000, "max": 4000 }
+      ]
+    },
+    {
+      "name": "Piano",
+      "ranges": [
+        { "min": 560, "max": 2000 }
+      ]
+    },
+    {
+      "name": "Kick",
+      "ranges": [
+        { "min": 0, "max": 572 }
+      ]
+    },
+    {
+      "name": "Glockenspiel",
+      "ranges": [
+        { "min": 4000, "max": 20000 }
+      ]
+    }
+  ]
+}

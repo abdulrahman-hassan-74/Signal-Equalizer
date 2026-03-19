@@ -1,0 +1,4 @@
+100 ---> Normal 
+106 ---> PVC
+209 ---> Atrial Premature Beats
+109 ---> Bundle Branch Block
