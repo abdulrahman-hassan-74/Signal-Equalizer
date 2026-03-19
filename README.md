@@ -1,7 +1,7 @@
 <div align="center">
 
 <!-- LOGO -->
-<img width="640" height="235" alt="Signal Equalizer Logo" src="https://github.com/user-attachments/assets/86aaab8c-b0b9-4653-965b-1a8de87714db" />
+<img width="823" height="235" alt="Signal Equalizer Logo" src="https://github.com/user-attachments/assets/86aaab8c-b0b9-4653-965b-1a8de87714db" />
 <br/>
 
 # ⚡ Signal Equalizer Studio
@@ -48,7 +48,7 @@ The Signal Equalizer is a browser-based app that lets you upload any audio or EC
 ### Main Interface
 
 The toolbar at the top gives you instant access to every control — mode selector, file upload, config save/load, and AI compare.
-
+<img width="1907" height="422" alt="Image" src="https://github.com/user-attachments/assets/b5080eeb-b474-429b-bad6-3744793b3efd" />
 ![Full Application View](docs/screenshots/full-app.png)
 
 ---
@@ -57,21 +57,18 @@ The toolbar at the top gives you instant access to every control — mode select
 
 Two linked cine viewers — **blue** for input, **pink** for output. Zoom with the scroll wheel, pan by dragging, and both viewers stay in perfect sync.
 
-![Waveform Viewers](docs/screenshots/waveform-viewers.png)
-
 ---
 
 ### Playback & Controls
 
 Play, Pause, Stop, and adjustable speed (0.25× to 4×). Zoom and pan buttons. Spectrogram toggle. Linear / Audiogram FFT scale switch.
 
-![Playback Bar](docs/screenshots/playback-bar.png)
-
 ---
 
 ### Frequency Spectrum Chart
 
 Input and output plotted together in real time. **Linear** shows the full range from 0 Hz to Nyquist. **Audiogram** uses a logarithmic X axis at 125 Hz → 8 kHz (ISO 8253-1 hearing-test standard).
+<img width="1918" height="805" alt="Image" src="https://github.com/user-attachments/assets/e5a85f8b-1ad2-402a-989f-696fc4e598e9" />
 
 ![FFT Chart](docs/screenshots/fft-chart.png)
 
@@ -80,8 +77,8 @@ Input and output plotted together in real time. **Linear** shows the full range 
 ### Spectrogram Viewers
 
 Two high-resolution 2D time-frequency heatmaps — input and output. Axes auto-adapt to the signal's actual sample rate. The output spectrogram updates within ~55 ms of any slider change.
+<img width="418" height="556" alt="Image" src="https://github.com/user-attachments/assets/fb1d1cc1-95f2-4d56-bd6a-02ef9bbf1140" />
 
-![Spectrograms](docs/screenshots/spectrograms.png)
 
 ---
 
@@ -89,15 +86,13 @@ Two high-resolution 2D time-frequency heatmaps — input and output. Axes auto-a
 
 Each custom mode exposes three independent systems. Only one is active at a time — the active system drives the output viewers and audio. Inactive systems are visually dimmed.
 
-![Three Systems](docs/screenshots/three-systems.png)
-
 ---
 
 ### System A — Frequency Domain
 
 Sliders scale the FFT magnitude bins within each configured frequency range. Precise, instant, and works in every mode.
 
-![System A](docs/screenshots/system-a.png)
+<img width="1495" height="720" alt="Image" src="https://github.com/user-attachments/assets/a95509dd-bfd7-402c-90e1-ae19fab3732d" />
 
 ---
 
@@ -105,7 +100,7 @@ Sliders scale the FFT magnitude bins within each configured frequency range. Pre
 
 Sliders control DWT coefficient energy per band using an exclusive level assignment that prevents bands from compounding gains on shared DWT levels.
 
-![System B](docs/screenshots/system-b.png)
+<img width="947" height="610" alt="Image" src="https://github.com/user-attachments/assets/8b652d3b-e8a8-463f-ac61-7eb0ccd33432" />
 
 ---
 
@@ -113,15 +108,7 @@ Sliders control DWT coefficient energy per band using an exclusive level assignm
 
 Click **🔬 Separate Signal** once to run the AI model. Gain sliders appear immediately — one per separated component. Every slider move is an instant weighted sum; no re-separation needed.
 
-![System C](docs/screenshots/system-c.png)
-
----
-
-### AI Component Viewer
-
-After separation, each component gets its own card — waveform thumbnail, frequency spectrum (computed in-browser), ▶ Play button, and a gain slider.
-
-![Component Viewer](docs/screenshots/component-viewer.png)
+<img width="792" height="528" alt="Image" src="https://github.com/user-attachments/assets/2b2c84b6-4f6d-4a27-8972-d7094bb86668" />
 
 ---
 
