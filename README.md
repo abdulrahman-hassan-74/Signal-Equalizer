@@ -1,8 +1,7 @@
 <div align="center">
 
 <!-- LOGO -->
-<img src="docs/logo.png" alt="Signal Equalizer Logo" width="640"/>
-
+<img width="640" height="235" alt="Signal Equalizer Logo" src="https://github.com/user-attachments/assets/86aaab8c-b0b9-4653-965b-1a8de87714db" />
 <br/>
 
 # ⚡ Signal Equalizer Studio
