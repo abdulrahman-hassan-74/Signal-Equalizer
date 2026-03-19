@@ -142,7 +142,9 @@ Separates a music file into its individual instrument stems using the **Demucs h
 <video src="https://github.com/user-attachments/assets/5492ba66-f09e-4a22-974b-f8dee605bf66" controls width="800" style="border-radius: 20px; border: 3px solid #00ffff; box-shadow: 0 0 30px #00ffff66;">
     Your browser does not support the video tag.
   </video>
-> [▶ Watch full demo video](docs/videos/instruments-demo.mp4)
+
+<video src="https://github.com/user-attachments/assets/5492ba66-f09e-4a22-974b-f8dee605bf66" controls width="900" style="border-radius: 20px; border: 3px solid #00ffff; box-shadow: 0 0 30px #00ffff;"></video>
+  
 
 ---
 
