@@ -253,9 +253,9 @@ Classifies heartbeat arrhythmia types using a **ResNet** pretrained on the MIT-B
 
 > 🎬 **Demo**
 >
-> ![ECG Demo](docs/videos/ecg-demo.gif)
->
-> [▶ Watch full demo video](docs/videos/ecg-demo.mp4)
+<video src="https://github.com/user-attachments/assets/526ff9b5-cfa4-465b-99ec-f96856161bdc" controls width="800" style="border-radius: 20px; border: 3px solid #00ffff; box-shadow: 0 0 30px #00ffff66;">
+    Your browser does not support the video tag.
+  </video>
 
 ---
 
@@ -273,10 +273,10 @@ Fully customizable frequency-domain equalization using any bands you define. Pur
 
 > 🎬 **Demo**
 >
-> ![Generic Demo](docs/videos/generic-demo.gif)
->
-> [▶ Watch full demo video](docs/videos/generic-demo.mp4)
-
+<video src="https://github.com/user-attachments/assets/316d6090-626c-4534-9466-44aa1e2047c4" controls width="800" style="border-radius: 20px; border: 3px solid #00ffff; box-shadow: 0 0 30px #00ffff66;">
+    Your browser does not support the video tag.
+  </video>
+  
 ---
 
 ## ✨ Features
@@ -579,7 +579,7 @@ A single slider can span multiple non-contiguous ranges:
 | Abdullah Gamil | [@AbdullahGamil](https://github.com/AbdullahGamil) |
 | Abdulrahman Hassan | [@AbdulrahmanHassan](https://github.com/AbdulrahmanHassan) |
 | Saga Sadek | [@SagaSadek](https://github.com/SagaSadek) |
-| Alaa Essam | [@AlaaEssam](https://github.com/AlaaEssam) |
+| Alaa Essam | [@AlaaEssam5](https://github.com/AlaaEssam) |
 
 ---
 
