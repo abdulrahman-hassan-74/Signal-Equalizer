@@ -143,7 +143,12 @@ Separates a music file into its individual instrument stems using the **Demucs h
     Your browser does not support the video tag.
   </video>
 
-<video src="https://github.com/user-attachments/assets/5492ba66-f09e-4a22-974b-f8dee605bf66" controls width="900" style="border-radius: 20px; border: 3px solid #00ffff; box-shadow: 0 0 30px #00ffff;"></video>
+<video src="https://github.com/user-attachments/assets/09c4cb5f-cd67-4ac7-ab47-1f397239b782" controls width="900" style="border-radius: 20px; border: 3px solid #00ffff; box-shadow: 0 0 30px #00ffff;"></video>
+
+
+<video src="https://github.com/user-attachments/assets/1ddb7326-7c25-4c66-80f3-1af1f95d0c6c" controls width="900" style="border-radius: 20px; border: 3px solid #00ffff; box-shadow: 0 0 30px #00ffff;"></video>
+
+
   
 
 ---
@@ -166,9 +171,19 @@ One component per detected animal sound class (e.g. Dog bark, Bird call, Cat meo
 
 > 🎬 **Demo**
 >
-> ![Animals Demo](docs/videos/animals-demo.gif)
->
-> [▶ Watch full demo video](docs/videos/animals-demo.mp4)
+<video src="https://github.com/user-attachments/assets/d5c2bc4a-dc26-4b06-96cd-762ad836b9c2" controls width="800" style="border-radius: 20px; border: 3px solid #00ffff; box-shadow: 0 0 30px #00ffff66;">
+    Your browser does not support the video tag.
+  </video>
+
+<video src="https://github.com/user-attachments/assets/bb373789-37ae-47b4-b4a1-e183e77fd32c" controls width="800" style="border-radius: 20px; border: 3px solid #00ffff; box-shadow: 0 0 30px #00ffff66;">
+    Your browser does not support the video tag.
+  </video>
+
+<video src="https://github.com/user-attachments/assets/fd5e1b3a-58f7-4749-8efe-891d60015b82" controls width="800" style="border-radius: 20px; border: 3px solid #00ffff; box-shadow: 0 0 30px #00ffff66;">
+    Your browser does not support the video tag.
+  </video>
+
+
 
 ---
 
@@ -192,9 +207,20 @@ Speaker 1, Speaker 2, Speaker 3, ... — as many as detected in the recording.
 
 > 🎬 **Demo**
 >
-> ![Voices Demo](docs/videos/voices-demo.gif)
->
-> [▶ Watch full demo video](docs/videos/voices-demo.mp4)
+<video src="https://github.com/user-attachments/assets/ed4e66c2-02d5-4631-a980-cbc65694ca97" controls width="800" style="border-radius: 20px; border: 3px solid #00ffff; box-shadow: 0 0 30px #00ffff66;">
+    Your browser does not support the video tag.
+  </video>
+
+
+  <video src="https://github.com/user-attachments/assets/7367a5c6-e263-4465-b375-9a3e5423223f" controls width="800" style="border-radius: 20px; border: 3px solid #00ffff; box-shadow: 0 0 30px #00ffff66;">
+    Your browser does not support the video tag.
+  </video>
+  
+
+<video src="https://github.com/user-attachments/assets/5638b33c-fce6-44ac-bdbb-a703b6fe4415" controls width="800" style="border-radius: 20px; border: 3px solid #00ffff; box-shadow: 0 0 30px #00ffff66;">
+    Your browser does not support the video tag.
+  </video>
+  
 
 ---
 
