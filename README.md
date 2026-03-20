@@ -577,7 +577,7 @@ A single slider can span multiple non-contiguous ranges:
 | Name | GitHub |
 |---|---|
 | Abdullah Gamil | [@AbdullahGamil](https://github.com/AbdullahGamil) |
-| Abdulrahman Hassan | [@AbdulrahmanHassan](https://github.com/AbdulrahmanHassan) |
+| Abdulrahman Hassan | [@AbdulrahmanHassan](https://github.com/abdulrahman-hassan-74) |
 | Saga Sadek | [@SagaSadek](https://github.com/saga913) |
 | Alaa Essam | [@AlaaEssam](https://github.com/Alaa-Essam5) |
 
